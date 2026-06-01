@@ -15,68 +15,82 @@ struct GameHistoryView: View {
         ZStack {
             Theme.background.ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text(L10n.tr("game_history"))
-                        .font(.system(.title2, design: .rounded).bold())
-                        .foregroundColor(Theme.textMain)
-                    
-                    Spacer()
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Centered Header
+                    VStack(spacing: 8) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 48))
+                            .foregroundStyle(Theme.primaryGradient)
+                            .padding(.bottom, 8)
+                        
+                        Text(L10n.tr("game_history"))
+                            .font(.largeTitle.bold())
+                            .foregroundColor(Theme.textMain)
+                        
+                        Text(L10n.tr("game_history_desc"))
+                            .font(.subheadline)
+                            .foregroundColor(Theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                    }
+                    .padding(.top, 24)
                     
                     if !store.games.isEmpty {
                         Button(action: {
                             store.clearAll()
                             HapticManager.shared.playNotification(.warning)
                         }) {
-                            HStack(spacing: 4) {
+                            HStack(spacing: 6) {
                                 Image(systemName: "trash")
                                 Text(L10n.tr("clear_history"))
                             }
-                            .font(.system(.caption, design: .rounded).bold())
+                            .font(.roundedSystem(.subheadline, weight: .bold))
                             .foregroundColor(Theme.lossColor)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Theme.lossColor.opacity(0.15))
-                            .cornerRadius(16)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Theme.lossColor.opacity(0.12))
+                            .cornerRadius(12)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 16)
+                                RoundedRectangle(cornerRadius: 12)
                                     .stroke(Theme.lossColor.opacity(0.25), lineWidth: 1)
                             )
                         }
+                        .buttonStyle(ScaleButtonStyle())
+                        .padding(.bottom, 4)
+                    }
+                    
+                    if store.games.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 48))
+                                .foregroundColor(Theme.textSecondary.opacity(0.3))
+                            Text(L10n.tr("no_saved_games"))
+                                .font(.roundedSystem(.headline))
+                                .foregroundColor(Theme.textSecondary)
+                            Text(L10n.tr("complete_game_to_view"))
+                                .font(.roundedSystem(.subheadline))
+                                .foregroundColor(Theme.textSecondary.opacity(0.6))
+                        }
+                        .padding(.vertical, 32)
+                    } else {
+                        VStack(spacing: 12) {
+                            ForEach(store.games) { game in
+                                GameRowView(game: game, displayOrder: displayOrder)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 12)
+                                    .background(Theme.panelBackground)
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    )
+                            }
+                        }
+                        .padding(.horizontal)
                     }
                 }
-                .padding()
-                
-                if store.games.isEmpty {
-                    Spacer()
-                    VStack(spacing: 12) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 48))
-                            .foregroundColor(Theme.textSecondary.opacity(0.5))
-                        Text(L10n.tr("no_saved_games"))
-                            .font(.system(.title3, design: .rounded))
-                            .foregroundColor(Theme.textSecondary)
-                        Text(L10n.tr("complete_game_to_view"))
-                            .font(.system(.caption, design: .rounded))
-                            .foregroundColor(Theme.textSecondary.opacity(0.6))
-                    }
-                    Spacer()
-                } else {
-                    List {
-                        ForEach(store.games) { game in
-                            GameRowView(game: game, displayOrder: displayOrder)
-                                .listRowBackground(Theme.panelBackground)
-                                .listRowSeparatorTint(Color.white.opacity(0.06))
-                        }
-                        .onDelete { indices in
-                            store.delete(at: indices)
-                            HapticManager.shared.playImpact(.medium)
-                        }
-                    }
-                    .listStyle(.plain)
-                    .scrollContentBackground(.hidden)
-                }
+                .padding(.bottom, 24)
             }
         }
     }

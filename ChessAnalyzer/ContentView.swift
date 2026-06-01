@@ -1852,238 +1852,254 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                Theme.background.ignoresSafeArea()
-                
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 24) {
-                        // Theme Selection Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.tr("theme_selection"))
-                                .font(.headline)
-                                .foregroundColor(Theme.textMain)
-                            
-                            LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
-                                ForEach(Theme.ThemeType.allCases) { type in
-                                    Button(action: {
-                                        withAnimation {
-                                            appTheme = type.rawValue
-                                        }
-                                    }) {
-                                        VStack(alignment: .leading, spacing: 10) {
-                                            // Mini Board Preview
-                                            HStack(spacing: 0) {
-                                                Rectangle()
-                                                    .fill(Theme.lightSquareForPreview(type))
-                                                    .frame(height: 40)
-                                                Rectangle()
-                                                    .fill(Theme.darkSquareForPreview(type))
-                                                    .frame(height: 40)
-                                            }
-                                            .cornerRadius(6)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 6)
-                                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                                            )
-                                            
-                                            Text(type.displayName)
-                                                .font(.roundedSystem(.subheadline, weight: .bold))
-                                                .foregroundColor(.white)
-                                                .lineLimit(2)
-                                                .multilineTextAlignment(.leading)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                        .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
-                                        .padding()
-                                        .background(appTheme == type.rawValue ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
-                                        .cornerRadius(16)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(appTheme == type.rawValue ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: appTheme == type.rawValue ? 2 : 1)
-                                        )
+        ZStack {
+            Theme.background.ignoresSafeArea()
+            
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Centered Header
+                    VStack(spacing: 8) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(Theme.primaryGradient)
+                            .padding(.bottom, 8)
+                        
+                        Text(L10n.tr("settings"))
+                            .font(.largeTitle.bold())
+                            .foregroundColor(Theme.textMain)
+                        
+                        Text(appLanguage == "de" ? "Passe das Design, die Sprache und Spielparameter der App an." : "Customize the app design, language, and gameplay parameters.")
+                            .font(.subheadline)
+                            .foregroundColor(Theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                    }
+                    .padding(.top, 24)
+                    
+                    // Theme Selection Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("theme_selection"))
+                            .font(.headline)
+                            .foregroundColor(Theme.textMain)
+                        
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 16), GridItem(.flexible(), spacing: 16)], spacing: 16) {
+                            ForEach(Theme.ThemeType.allCases) { type in
+                                Button(action: {
+                                    withAnimation {
+                                        appTheme = type.rawValue
                                     }
-                                    .buttonStyle(ScaleButtonStyle())
+                                }) {
+                                    VStack(alignment: .leading, spacing: 10) {
+                                        // Mini Board Preview
+                                        HStack(spacing: 0) {
+                                            Rectangle()
+                                                .fill(Theme.lightSquareForPreview(type))
+                                                .frame(height: 40)
+                                            Rectangle()
+                                                .fill(Theme.darkSquareForPreview(type))
+                                                .frame(height: 40)
+                                        }
+                                        .cornerRadius(6)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        )
+                                        
+                                        Text(type.displayName)
+                                            .font(.roundedSystem(.subheadline, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.leading)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                    .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
+                                    .padding()
+                                    .background(appTheme == type.rawValue ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(appTheme == type.rawValue ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: appTheme == type.rawValue ? 2 : 1)
+                                    )
                                 }
+                                .buttonStyle(ScaleButtonStyle())
                             }
                         }
+                    }
+                    
+                    // Language Selection Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("lang_selection"))
+                            .font(.headline)
+                            .foregroundColor(Theme.textMain)
                         
-                        // Language Selection Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.tr("lang_selection"))
-                                .font(.headline)
-                                .foregroundColor(Theme.textMain)
-                            
-                            HStack(spacing: 16) {
-                                ForEach(AppLanguage.allCases) { lang in
-                                    Button(action: {
-                                        withAnimation {
-                                            appLanguage = lang.rawValue
-                                        }
-                                    }) {
-                                        Text(lang.displayName)
-                                            .font(.subheadline.bold())
-                                            .foregroundColor(.white)
-                                            .frame(maxWidth: .infinity)
-                                            .padding(.vertical, 14)
-                                            .background(appLanguage == lang.rawValue ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
+                        HStack(spacing: 16) {
+                            ForEach(AppLanguage.allCases) { lang in
+                                Button(action: {
+                                    withAnimation {
+                                        appLanguage = lang.rawValue
+                                    }
+                                }) {
+                                    Text(lang.displayName)
+                                        .font(.subheadline.bold())
+                                        .foregroundColor(.white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 14)
+                                        .background(appLanguage == lang.rawValue ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(appLanguage == lang.rawValue ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 2)
+                                        )
+                                }
+                                .buttonStyle(ScaleButtonStyle())
+                            }
+                        }
+                    }
+                    
+                    // App Icon Selection Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("app_icon_selection"))
+                            .font(.headline)
+                            .foregroundColor(Theme.textMain)
+                        
+                        HStack(spacing: 16) {
+                            ForEach(["brilliant", "blunder", "book"], id: \.self) { icon in
+                                Button(action: {
+                                    withAnimation {
+                                        appIcon = icon
+                                        changeAppIcon(to: icon)
+                                    }
+                                }) {
+                                    VStack(alignment: .center, spacing: 8) {
+                                        Image(icon)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 60, height: 60)
                                             .cornerRadius(12)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(appLanguage == lang.rawValue ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 2)
+                                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
                                             )
+                                            .shadow(radius: 3)
+                                        
+                                        Text(icon == "brilliant" ? L10n.tr("brilliant") :
+                                             icon == "blunder" ? L10n.tr("blunder") :
+                                             L10n.tr("book"))
+                                            .font(.caption.bold())
+                                            .foregroundColor(.white)
                                     }
-                                    .buttonStyle(ScaleButtonStyle())
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(appIcon == icon ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
+                                    .cornerRadius(16)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(appIcon == icon ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 2)
+                                    )
                                 }
+                                .buttonStyle(ScaleButtonStyle())
                             }
                         }
+                    }
+                    
+                    // Board & Game Settings Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("game_settings"))
+                            .font(.headline)
+                            .foregroundColor(Theme.textMain)
                         
-                        // App Icon Selection Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.tr("app_icon_selection"))
-                                .font(.headline)
-                                .foregroundColor(Theme.textMain)
+                        VStack(spacing: 12) {
+                            Toggle(L10n.tr("board_coordinates"), isOn: $showBoardCoordinates)
+                                .tint(Theme.accentColor)
+                                .foregroundColor(.white)
                             
-                            HStack(spacing: 16) {
-                                ForEach(["brilliant", "blunder", "book"], id: \.self) { icon in
-                                    Button(action: {
-                                        withAnimation {
-                                            appIcon = icon
-                                            changeAppIcon(to: icon)
-                                        }
-                                    }) {
-                                        VStack(alignment: .center, spacing: 8) {
-                                            Image(icon)
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 60, height: 60)
-                                                .cornerRadius(12)
-                                                .overlay(
-                                                    RoundedRectangle(cornerRadius: 12)
-                                                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                                )
-                                                .shadow(radius: 3)
-                                            
-                                            Text(icon == "brilliant" ? L10n.tr("brilliant") :
-                                                 icon == "blunder" ? L10n.tr("blunder") :
-                                                 L10n.tr("book"))
-                                                .font(.caption.bold())
-                                                .foregroundColor(.white)
-                                        }
-                                        .padding(.horizontal, 12)
-                                        .padding(.vertical, 10)
-                                        .background(appIcon == icon ? Theme.accentColor.opacity(0.15) : Theme.panelBackground)
-                                        .cornerRadius(16)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(appIcon == icon ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 2)
-                                        )
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
-                                }
+                            Divider()
+                                .background(Color.white.opacity(0.12))
+                            
+                            Toggle(L10n.tr("haptic_feedback"), isOn: $hapticFeedbackEnabled)
+                                .tint(Theme.accentColor)
+                                .foregroundColor(.white)
+                            
+                            Divider()
+                                .background(Color.white.opacity(0.12))
+                            
+                            Toggle(L10n.tr("screen_shake"), isOn: $screenShakeEnabled)
+                                .tint(Theme.accentColor)
+                                .foregroundColor(.white)
+                            
+                            Divider()
+                                .background(Color.white.opacity(0.12))
+                            
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(L10n.tr("bot_name_label"))
+                                    .font(.caption.bold())
+                                    .foregroundColor(Theme.textSecondary)
+                                
+                                TextField("Stockfish", text: $botName)
+                                    .font(.subheadline)
+                                    .foregroundColor(.white)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 12)
+                                    .background(Color.black.opacity(0.20))
+                                    .cornerRadius(8)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                    )
                             }
                         }
+                        .padding()
+                        .background(Theme.panelBackground)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+                    }
+                    
+                    // Danger Zone Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(L10n.tr("danger_zone"))
+                            .font(.headline)
+                            .foregroundColor(Theme.textMain)
                         
-                        // Board & Game Settings Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.tr("game_settings"))
-                                .font(.headline)
-                                .foregroundColor(Theme.textMain)
-                            
-                            VStack(spacing: 12) {
-                                Toggle(L10n.tr("board_coordinates"), isOn: $showBoardCoordinates)
-                                    .tint(Theme.accentColor)
-                                    .foregroundColor(.white)
-                                
-                                Divider()
-                                    .background(Color.white.opacity(0.12))
-                                
-                                Toggle(L10n.tr("haptic_feedback"), isOn: $hapticFeedbackEnabled)
-                                    .tint(Theme.accentColor)
-                                    .foregroundColor(.white)
-                                
-                                Divider()
-                                    .background(Color.white.opacity(0.12))
-                                
-                                Toggle(L10n.tr("screen_shake"), isOn: $screenShakeEnabled)
-                                    .tint(Theme.accentColor)
-                                    .foregroundColor(.white)
-                                
-                                Divider()
-                                    .background(Color.white.opacity(0.12))
-                                
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text(L10n.tr("bot_name_label"))
-                                        .font(.caption.bold())
-                                        .foregroundColor(Theme.textSecondary)
-                                    
-                                    TextField("Stockfish", text: $botName)
-                                        .font(.subheadline)
-                                        .foregroundColor(.white)
-                                        .padding(.vertical, 8)
-                                        .padding(.horizontal, 12)
-                                        .background(Color.black.opacity(0.20))
-                                        .cornerRadius(8)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 8)
-                                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                                        )
-                                }
+                        Button(action: {
+                            showingResetAlert = true
+                        }) {
+                            HStack {
+                                Image(systemName: "trash.fill")
+                                Text(L10n.tr("reset_history"))
+                                    .bold()
+                                Spacer()
                             }
+                            .foregroundColor(.red)
                             .padding()
                             .background(Theme.panelBackground)
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                                    .stroke(Color.red.opacity(0.3), lineWidth: 1)
                             )
                         }
-                        
-                        // Danger Zone Section
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text(L10n.tr("danger_zone"))
-                                .font(.headline)
-                                .foregroundColor(Theme.textMain)
-                            
-                            Button(action: {
-                                showingResetAlert = true
-                            }) {
-                                HStack {
-                                    Image(systemName: "trash.fill")
-                                    Text(L10n.tr("reset_history"))
-                                        .bold()
-                                    Spacer()
-                                }
-                                .foregroundColor(.red)
-                                .padding()
-                                .background(Theme.panelBackground)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                                )
-                            }
-                            .buttonStyle(ScaleButtonStyle())
-                        }
-                        
-                        // About Section
-                        VStack(spacing: 8) {
-                            Text(L10n.tr("about_app"))
-                                .font(.headline)
-                                .foregroundColor(Theme.textMain)
-                            
-                            Text(L10n.tr("about_desc"))
-                                .font(.caption)
-                                .foregroundColor(Theme.textSecondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(.top, 16)
-                        .padding(.bottom, 24)
+                        .buttonStyle(ScaleButtonStyle())
                     }
-                    .padding()
+                    
+                    // About Section
+                    VStack(spacing: 8) {
+                        Text(L10n.tr("about_app"))
+                            .font(.headline)
+                            .foregroundColor(Theme.textMain)
+                        
+                        Text(L10n.tr("about_desc"))
+                            .font(.caption)
+                            .foregroundColor(Theme.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
                 }
+                .padding()
             }
-            .navigationTitle(L10n.tr("settings"))
             .alert(isPresented: $showingResetAlert) {
                 Alert(
                     title: Text(L10n.tr("reset_history")),
@@ -2095,8 +2111,8 @@ struct SettingsView: View {
                 )
             }
         }
-        .navigationViewStyle(.stack)
         .preferredColorScheme(.dark)
+    }
     }
     
     private func changeAppIcon(to iconName: String) {

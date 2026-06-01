@@ -124,13 +124,25 @@ struct OpeningTrainerView: View {
     
     var menuView: some View {
         ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 24) {
-                VStack(alignment: .leading, spacing: 6) {
+            VStack(spacing: 24) {
+                // Centered Header
+                VStack(spacing: 8) {
+                    Image(systemName: "dumbbell.fill")
+                        .font(.system(size: 48))
+                        .foregroundStyle(Theme.primaryGradient)
+                        .padding(.bottom, 8)
+                    
                     Text(L10n.tr("training"))
                         .font(.largeTitle.bold())
                         .foregroundColor(Theme.textMain)
+                    
+                    Text(appLanguage == "de" ? "Wähle einen Modus, um deine Eröffnungen, Matt-Szenarien oder Feld-Visualisierung zu trainieren." : "Select a mode to train your openings, checkmate scenarios, or board visualization.")
+                        .font(.subheadline)
+                        .foregroundColor(Theme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 16)
                 }
-                .padding(.top, 16)
+                .padding(.top, 24)
                 
                 VStack(spacing: 20) {
                     Button(action: {
