@@ -82,20 +82,29 @@ struct MoveClassificationBadge: View {
     var body: some View {
         if classification != .none {
             ZStack {
+                // Sticker White Border with Drop Shadow
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: size, height: size)
+                    .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+                
+                // Colored Circle
                 Circle()
                     .fill(classification.color)
-                    .frame(width: size, height: size)
-                    .shadow(color: .black.opacity(0.18), radius: 2.5, x: 0, y: 1.2)
+                    .frame(width: size * 0.82, height: size * 0.82)
                 
-                if let icon = classification.iconName {
-                    Image(systemName: icon)
-                        .font(.system(size: size * 0.55))
-                        .foregroundColor(.white)
-                } else {
-                    Text(classification.symbol)
-                        .font(.system(size: size * 0.6))
-                        .foregroundColor(.white)
+                // Symbol/Icon with subtle 3D shadow
+                Group {
+                    if let icon = classification.iconName {
+                        Image(systemName: icon)
+                            .font(.system(size: size * 0.44, weight: .bold))
+                    } else {
+                        Text(classification.symbol)
+                            .font(.system(size: size * 0.44, weight: .black, design: .rounded))
+                    }
                 }
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.3), radius: size * 0.02, x: 0, y: size * 0.03)
             }
         }
     }
@@ -106,14 +115,21 @@ struct CheckmateBadge: View {
     
     var body: some View {
         ZStack {
+            // Sticker White Border with Drop Shadow
+            Circle()
+                .fill(Color.white)
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+            
+            // Red Colored Circle (blunder color)
             Circle()
                 .fill(ClassificationColor.blunder)
-                .frame(width: size, height: size)
-                .shadow(color: .black.opacity(0.18), radius: 2.5, x: 0, y: 1.2)
+                .frame(width: size * 0.82, height: size * 0.82)
             
             Text("#")
-                .font(.system(size: size * 0.6, weight: .bold))
+                .font(.system(size: size * 0.46, weight: .black, design: .rounded))
                 .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.3), radius: size * 0.02, x: 0, y: size * 0.03)
         }
     }
 }
@@ -123,14 +139,21 @@ struct DrawBadge: View {
     
     var body: some View {
         ZStack {
+            // Sticker White Border with Drop Shadow
+            Circle()
+                .fill(Color.white)
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+            
+            // Gray Colored Circle
             Circle()
                 .fill(Color.gray)
-                .frame(width: size, height: size)
-                .shadow(color: .black.opacity(0.18), radius: 2.5, x: 0, y: 1.2)
+                .frame(width: size * 0.82, height: size * 0.82)
             
             Text("½")
-                .font(.system(size: size * 0.6, weight: .bold))
+                .font(.system(size: size * 0.46, weight: .black, design: .rounded))
                 .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.3), radius: size * 0.02, x: 0, y: size * 0.03)
         }
     }
 }
