@@ -49,6 +49,8 @@ struct ContentView: View {
     @State private var showAnalysisClassificationBadge = false
     @State private var lastAnalysisClassification: MoveClassification? = nil
     @State private var showAnalysisBestMoveArrow: (start: Square, end: Square)? = nil
+    @State private var isCalculatingAnalysisBestMove: Piece.Color? = nil
+    @State private var activeBestMoveArrowOwner: (color: Piece.Color, isCurrent: Bool)? = nil
     @State private var showAnalysisTabAnalysis = true
     @State private var showAnalysisEvalBar = false
     @State private var analysisSelectedElo: Double = 1500
@@ -989,6 +991,60 @@ struct ContentView: View {
         showAnalysisBestMoveArrow = nil
         analysisHintBestMove = nil
         isAnalyzingAnalysisHint = false
+        activeBestMoveArrowOwner = nil
+    }
+    
+    private func handleAnalysisBestMoveTapped(for color: Piece.Color) {
+        let isCurrent = (analysisViewModel.displayBoard.position.sideToMove == color)
+        
+        if isCurrent {
+            if activeBestMoveArrowOwner?.color == color && activeBestMoveArrowOwner?.isCurrent == true {
+                showAnalysisBestMoveArrow = nil
+                activeBestMoveArrowOwner = nil
+                return
+            }
+            
+            let nextIndex = analysisViewModel.historyIndex + 1
+            if analysisViewModel.isExploringHistory && nextIndex < analysisViewModel.history.count,
+               let bestMoveStr = analysisViewModel.history[nextIndex].bestMoveStr {
+                if let move = EngineLANParser.parse(move: bestMoveStr, for: color, in: analysisViewModel.displayBoard.position) {
+                    showAnalysisBestMoveArrow = (move.start, move.end)
+                    activeBestMoveArrowOwner = (color, true)
+                }
+            } else {
+                let fen = analysisViewModel.displayBoard.position.fen
+                isCalculatingAnalysisBestMove = color
+                Task {
+                    let result = await evaluateWithCache(fen: fen, depth: 10, limitSkill: false, movetime: 300)
+                    await MainActor.run {
+                        isCalculatingAnalysisBestMove = nil
+                        guard analysisViewModel.displayBoard.position.fen == fen else { return }
+                        if let bestMoveStr = result?.bestMove,
+                           let move = EngineLANParser.parse(move: bestMoveStr, for: color, in: analysisViewModel.displayBoard.position) {
+                            showAnalysisBestMoveArrow = (move.start, move.end)
+                            activeBestMoveArrowOwner = (color, true)
+                        }
+                    }
+                }
+            }
+        } else {
+            if activeBestMoveArrowOwner?.color == color && activeBestMoveArrowOwner?.isCurrent == false {
+                showAnalysisBestMoveArrow = nil
+                activeBestMoveArrowOwner = nil
+                return
+            }
+            
+            let nodeIndex = analysisViewModel.historyIndex
+            if nodeIndex < analysisViewModel.history.count {
+                let node = analysisViewModel.history[nodeIndex]
+                if node.movingColor == color, let bestMoveStr = node.bestMoveStr, let fenBefore = node.fenBefore, let posBefore = Position(fen: fenBefore) {
+                    if let move = EngineLANParser.parse(move: bestMoveStr, for: color, in: posBefore) {
+                        showAnalysisBestMoveArrow = (move.start, move.end)
+                        activeBestMoveArrowOwner = (color, false)
+                    }
+                }
+            }
+        }
     }
     
     private func requestAnalysisHint() {
@@ -1351,30 +1407,25 @@ struct ContentView: View {
                                 timeRemaining: analysisViewModel.isTimed ? analysisViewModel.formatTime(topColor == .white ? analysisViewModel.whiteTimeRemaining : analysisViewModel.blackTimeRemaining) : nil,
                                 isActive: analysisViewModel.board.position.sideToMove == topColor,
                                 mateIn: mateIn(for: topColor, vm: analysisViewModel),
-                                hintAction: analysisViewModel.board.position.sideToMove == topColor ? { requestAnalysisHint() } : nil,
-                                hintStep: analysisViewModel.hintStep,
-                                isAnalyzingHint: isAnalyzingAnalysisHint,
-                                bestMoveAction: {
-                                    if let node = analysisHindsightNode,
-                                       let bestMoveStr = node.bestMoveStr,
-                                       let fen = node.fenBefore,
-                                       let position = Position(fen: fen),
-                                       let move = EngineLANParser.parse(move: bestMoveStr, for: node.movingColor ?? topColor, in: position) {
-                                        withAnimation {
-                                            showAnalysisBestMoveArrow = (start: move.start, end: move.end)
+                                isAnalysisMode: true,
+                                isCalculatingBestMove: isCalculatingAnalysisBestMove == topColor,
+                                isBestMoveActive: activeBestMoveArrowOwner?.color == topColor,
+                                isBestMoveDisabled: {
+                                    let isCurrent = (analysisViewModel.displayBoard.position.sideToMove == topColor)
+                                    if isCurrent {
+                                        return false
+                                    } else {
+                                        let nodeIndex = analysisViewModel.historyIndex
+                                        if nodeIndex < analysisViewModel.history.count {
+                                            let node = analysisViewModel.history[nodeIndex]
+                                            return node.movingColor != topColor || node.bestMoveStr == nil
                                         }
-                                    }
-                                },
-                                showBestMoveButton: {
-                                    if showAnalysisTabAnalysis,
-                                       let node = analysisHindsightNode,
-                                       let classification = node.classification,
-                                       let bestMoveStr = node.bestMoveStr, !bestMoveStr.isEmpty,
-                                       (classification == .blunder || classification == .mistake || classification == .inaccuracy) {
                                         return true
                                     }
-                                    return false
-                                }()
+                                }(),
+                                bestMoveAction: {
+                                    handleAnalysisBestMoveTapped(for: topColor)
+                                }
                             )
                             
                             HStack(alignment: .center, spacing: 12) {
@@ -1423,30 +1474,25 @@ struct ContentView: View {
                                 timeRemaining: analysisViewModel.isTimed ? analysisViewModel.formatTime(bottomColor == .white ? analysisViewModel.whiteTimeRemaining : analysisViewModel.blackTimeRemaining) : nil,
                                 isActive: analysisViewModel.board.position.sideToMove == bottomColor,
                                 mateIn: mateIn(for: bottomColor, vm: analysisViewModel),
-                                hintAction: analysisViewModel.board.position.sideToMove == bottomColor ? { requestAnalysisHint() } : nil,
-                                hintStep: analysisViewModel.hintStep,
-                                isAnalyzingHint: isAnalyzingAnalysisHint,
-                                bestMoveAction: {
-                                    if let node = analysisHindsightNode,
-                                       let bestMoveStr = node.bestMoveStr,
-                                       let fen = node.fenBefore,
-                                       let position = Position(fen: fen),
-                                       let move = EngineLANParser.parse(move: bestMoveStr, for: node.movingColor ?? bottomColor, in: position) {
-                                        withAnimation {
-                                            showAnalysisBestMoveArrow = (start: move.start, end: move.end)
+                                isAnalysisMode: true,
+                                isCalculatingBestMove: isCalculatingAnalysisBestMove == bottomColor,
+                                isBestMoveActive: activeBestMoveArrowOwner?.color == bottomColor,
+                                isBestMoveDisabled: {
+                                    let isCurrent = (analysisViewModel.displayBoard.position.sideToMove == bottomColor)
+                                    if isCurrent {
+                                        return false
+                                    } else {
+                                        let nodeIndex = analysisViewModel.historyIndex
+                                        if nodeIndex < analysisViewModel.history.count {
+                                            let node = analysisViewModel.history[nodeIndex]
+                                            return node.movingColor != bottomColor || node.bestMoveStr == nil
                                         }
-                                    }
-                                },
-                                showBestMoveButton: {
-                                    if showAnalysisTabAnalysis,
-                                       let node = analysisHindsightNode,
-                                       let classification = node.classification,
-                                       let bestMoveStr = node.bestMoveStr, !bestMoveStr.isEmpty,
-                                       (classification == .blunder || classification == .mistake || classification == .inaccuracy) {
                                         return true
                                     }
-                                    return false
-                                }()
+                                }(),
+                                bestMoveAction: {
+                                    handleAnalysisBestMoveTapped(for: bottomColor)
+                                }
                             )
                             
                             HStack(alignment: .center, spacing: 12) {
@@ -2167,6 +2213,10 @@ struct PlayerProfileView: View {
     var isAnalyzingHint: Bool = false
     var bestMoveAction: (() -> Void)? = nil
     var showBestMoveButton: Bool = false
+    var isAnalysisMode: Bool = false
+    var isCalculatingBestMove: Bool = false
+    var isBestMoveActive: Bool = false
+    var isBestMoveDisabled: Bool = false
     
     private func hintButtonText(for step: Int) -> String {
         switch step {
@@ -2232,7 +2282,38 @@ struct PlayerProfileView: View {
             
             Spacer()
             
-            if let hintAction = hintAction {
+            if isAnalysisMode {
+                Button(action: {
+                    bestMoveAction?()
+                }) {
+                    HStack(spacing: 4) {
+                        if isCalculatingBestMove {
+                            ProgressView()
+                                .tint(isBestMoveActive ? .black : Theme.highlightSquare)
+                                .scaleEffect(isIPad ? 0.9 : 0.65)
+                                .frame(width: isIPad ? 20 : 14, height: isIPad ? 20 : 14)
+                        } else {
+                            Image(systemName: "arrow.up.right")
+                                .font(isIPad ? Font.body : Font.caption)
+                        }
+                        
+                        Text(L10n.tr("best_move"))
+                            .font(isIPad ? Font.body.bold() : Font.caption.bold())
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                    .foregroundColor(isBestMoveActive ? .black : (isBestMoveDisabled ? Color.gray : Theme.highlightSquare))
+                    .padding(.horizontal, isIPad ? 12 : 8)
+                    .padding(.vertical, isIPad ? 8 : 5)
+                    .background(isBestMoveActive ? Theme.highlightSquare : (isBestMoveDisabled ? Theme.panelBackground.opacity(0.5) : Theme.panelBackground))
+                    .cornerRadius(6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(isBestMoveActive ? Color.clear : (isBestMoveDisabled ? Color.clear : Theme.highlightSquare.opacity(0.3)), lineWidth: 1)
+                    )
+                }
+                .disabled(isBestMoveDisabled || isCalculatingBestMove)
+                .padding(.leading, 8)
+            } else if let hintAction = hintAction {
                 HStack(spacing: isIPad ? 12 : 8) {
                     Button(action: hintAction) {
                         HStack(spacing: 4) {
