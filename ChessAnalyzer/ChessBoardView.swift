@@ -4,7 +4,7 @@ import ChessKit
 struct ChessBoardView: View {
     @AppStorage("appTheme") private var appTheme = "standard"
     @AppStorage("appLanguage") private var appLanguage = "de"
-    @AppStorage("screenShakeEnabled") private var screenShakeEnabled = true
+    @AppStorage("screenShakeEnabled") private var screenShakeEnabled = false
     @State private var shakeOffsetX: CGFloat = 0
     @State private var shakeOffsetY: CGFloat = 0
     @ObservedObject var viewModel: GameViewModel
@@ -93,6 +93,16 @@ struct ChessBoardView: View {
                                     return false
                                 }()
                                 
+                                let isSquareTimeExpiredKing: Bool = {
+                                    if let expiredColor = viewModel.expiredPlayerColor {
+                                        if let piece = viewModel.displayBoard.position.piece(at: square),
+                                           piece.kind == .king && piece.color == expiredColor {
+                                            return true
+                                        }
+                                    }
+                                    return false
+                                }()
+                                
                                 let isSquareLastMoveEnd = (viewModel.displayLastMove?.end == square)
                                 let squareClassification: MoveClassification? = {
                                     if showAnalysis,
@@ -116,16 +126,18 @@ struct ChessBoardView: View {
                                     isHintHighlighted: isHintHighlighted,
                                     isCheckmated: isSquareCheckmatedKing,
                                     isDraw: isSquareDrawKing,
+                                    isTimeExpired: isSquareTimeExpiredKing,
                                     size: squareSize,
                                     fileIndex: col,
                                     rankIndex: row,
                                     classification: squareClassification,
-                                    showClassification: shouldShowClassification
+                                    showClassification: shouldShowClassification,
+                                    shouldMirrorBlackPieces: viewModel.isFriendMode && !viewModel.flipBoardAfterMoves
                                 )
                                 .onTapGesture {
                                     viewModel.select(square: square)
                                 }
-                                .zIndex((squareClassification != nil && shouldShowClassification) || isSquareCheckmatedKing || isSquareDrawKing ? 10 : 0)
+                                .zIndex((squareClassification != nil && shouldShowClassification) || isSquareCheckmatedKing || isSquareDrawKing || isSquareTimeExpiredKing ? 10 : 0)
                             }
                         }
                     }
@@ -231,11 +243,13 @@ struct SquareView: View {
     var isHintHighlighted: Bool = false
     var isCheckmated: Bool = false
     var isDraw: Bool = false
+    var isTimeExpired: Bool = false
     let size: CGFloat
     let fileIndex: Int
     let rankIndex: Int
     var classification: MoveClassification? = nil
     var showClassification: Bool = false
+    var shouldMirrorBlackPieces: Bool = false
     
     var backgroundColor: Color {
         if isSelected {
@@ -291,6 +305,11 @@ struct SquareView: View {
                     .resizable()
                     .scaledToFit()
                     .frame(width: size * 0.9, height: size * 0.9)
+                    .rotationEffect(
+                        (shouldMirrorBlackPieces && piece.color == .black)
+                        ? .degrees(180)
+                        : .degrees(0)
+                    )
             }
             
             if isLegalMove {
@@ -312,6 +331,11 @@ struct SquareView: View {
             
             if isDraw {
                 DrawBadge(size: badgeSize)
+                    .position(x: size - badgeOffset, y: badgeOffset)
+            }
+            
+            if isTimeExpired {
+                TimeUpBadge(size: badgeSize)
                     .position(x: size - badgeOffset, y: badgeOffset)
             }
             

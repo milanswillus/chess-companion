@@ -64,6 +64,7 @@ let mateScenariosList = [
 ]
 
 struct OpeningTrainerView: View {
+    var isActive: Bool = true
     @AppStorage("appLanguage") private var appLanguage = "de"
     @AppStorage("appTheme") private var appTheme = "standard"
     @State private var selectedOpeningForColorSelection: Opening? = nil
@@ -76,6 +77,10 @@ struct OpeningTrainerView: View {
         }
         return nil
     }()
+    
+    @State private var menuScrollOffset: CGFloat = 0
+    @State private var openingsScrollOffset: CGFloat = 0
+    @State private var matesScrollOffset: CGFloat = 0
     
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -112,6 +117,7 @@ struct OpeningTrainerView: View {
                 }
             }
         }
+        .coordinateSpace(name: "trainingContainer")
         .sheet(item: $selectedOpeningForColorSelection) { opening in
             ColorSelectionSheet(opening: opening) { color in
                 selectedOpeningForColorSelection = nil
@@ -123,217 +129,117 @@ struct OpeningTrainerView: View {
     }
     
     var menuView: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 24) {
-                // Centered Header
-                VStack(spacing: 8) {
-                    Image(systemName: "dumbbell.fill")
-                        .font(.system(size: 48))
-                        .foregroundStyle(Theme.primaryGradient)
-                        .padding(.bottom, 8)
-                    
-                    Text(L10n.tr("training"))
-                        .font(.largeTitle.bold())
-                        .foregroundColor(Theme.textMain)
-                    
-                    Text(appLanguage == "de" ? "Wähle einen Modus, um deine Eröffnungen, Matt-Szenarien oder Feld-Visualisierung zu trainieren." : "Select a mode to train your openings, checkmate scenarios, or board visualization.")
-                        .font(.subheadline)
-                        .foregroundColor(Theme.textSecondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
-                }
-                .padding(.top, 24)
-                
-                VStack(spacing: 20) {
-                    Button(action: {
-                        activeMode = .openings
-                    }) {
-                        HStack(spacing: 16) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Theme.accentColor.opacity(0.15))
-                                    .frame(width: 56, height: 56)
-                                Image(systemName: "book.closed.fill")
-                                    .font(.title2)
-                                    .foregroundColor(Theme.accentColor)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(L10n.tr("openings_training"))
-                                    .font(.roundedSystem(.title3, weight: .bold))
-                                    .foregroundColor(.white)
-                                
-                                Text(L10n.tr("openings_training_desc"))
-                                    .font(.roundedSystem(.caption))
-                                    .foregroundColor(Theme.textSecondary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(Theme.textSecondary.opacity(0.5))
-                        }
-                        .padding()
-                        .background(Theme.panelBackground)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    
-                    Button(action: {
-                        activeMode = .mates
-                    }) {
-                        HStack(spacing: 16) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Theme.accentColor.opacity(0.15))
-                                    .frame(width: 56, height: 56)
-                                Image(systemName: "crown.fill")
-                                    .font(.title2)
-                                    .foregroundColor(Theme.accentColor)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(L10n.tr("mate_scenarios"))
-                                    .font(.roundedSystem(.title3, weight: .bold))
-                                    .foregroundColor(.white)
-                                
-                                Text(L10n.tr("mate_training_desc"))
-                                    .font(.roundedSystem(.caption))
-                                    .foregroundColor(Theme.textSecondary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(Theme.textSecondary.opacity(0.5))
-                        }
-                        .padding()
-                        .background(Theme.panelBackground)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                    
-                    Button(action: {
-                        activeMode = .coordinates
-                    }) {
-                        HStack(spacing: 16) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Theme.accentColor.opacity(0.15))
-                                    .frame(width: 56, height: 56)
-                                Image(systemName: "target")
-                                    .font(.title2)
-                                    .foregroundColor(Theme.accentColor)
-                            }
-                            
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(L10n.tr("learn_coordinates"))
-                                    .font(.roundedSystem(.title3, weight: .bold))
-                                    .foregroundColor(.white)
-                                
-                                Text(L10n.tr("coord_desc"))
-                                    .font(.roundedSystem(.caption))
-                                    .foregroundColor(Theme.textSecondary)
-                                    .multilineTextAlignment(.leading)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(Theme.textSecondary.opacity(0.5))
-                        }
-                        .padding()
-                        .background(Theme.panelBackground)
-                        .cornerRadius(16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                        )
-                    }
-                    .buttonStyle(ScaleButtonStyle())
-                }
-            }
-            .padding(.horizontal)
-        }
-    }
-    
-    var openingsGridView: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 12) {
-                    Button(action: {
-                        activeMode = .menu
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.title2.bold())
-                            .foregroundColor(Theme.accentColor)
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        return ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    if isActive {
+                        ScrollOffsetDetector(coordinateSpace: "trainingContainer", tag: "trainingMenu")
                     }
                     
-                    Text(L10n.tr("openings"))
-                        .font(.largeTitle.bold())
-                        .foregroundColor(Theme.textMain)
-                }
-                .padding(.top, 16)
-                
-                Text(L10n.tr("theory_text"))
-                    .font(.subheadline)
-                    .foregroundColor(Theme.textSecondary)
-                    .padding(.bottom, 8)
-                
-                LazyVGrid(columns: columns, spacing: 16) {
-                    ForEach(Opening.allOpenings) { opening in
-                        OpeningCardView(opening: opening) {
-                            selectedOpeningForColorSelection = opening
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
-        }
-    }
-    
-    var mateScenariosListView: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 20) {
-                HStack(spacing: 12) {
-                    Button(action: {
-                        activeMode = .menu
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.title2.bold())
-                            .foregroundColor(Theme.accentColor)
-                    }
+                    Spacer().frame(height: isIPad ? 224 : 216)
                     
-                    Text(L10n.tr("mate_scenarios"))
-                        .font(.largeTitle.bold())
-                        .foregroundColor(Theme.textMain)
-                }
-                .padding(.top, 16)
-                
-                Text(appLanguage == "de" ? "Wähle ein Endspiel-Matt-Szenario aus und setze den maximalen Bot matt. Fehler führen zum sofortigen Abbruch!" : "Select an endgame checkmate scenario and mate the max strength bot. Mistakes lead to immediate termination!")
-                    .font(.subheadline)
-                    .foregroundColor(Theme.textSecondary)
-                    .padding(.bottom, 8)
-                
-                VStack(spacing: 16) {
-                    ForEach(mateScenariosList) { scenario in
+                    VStack(spacing: 20) {
                         Button(action: {
-                            activeMateScenario = scenario
+                            activeMode = .openings
                         }) {
                             HStack(spacing: 16) {
-                                MateScenarioBoardRow(scenarioId: scenario.id)
-                                    .frame(height: 36)
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Theme.accentColor.opacity(0.15))
+                                        .frame(width: 56, height: 56)
+                                    Image(systemName: "book.closed.fill")
+                                        .font(.title2)
+                                        .foregroundColor(Theme.accentColor)
+                                }
                                 
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(L10n.tr("openings_training"))
+                                        .font(.roundedSystem(.title3, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text(L10n.tr("openings_training_desc"))
+                                        .font(.roundedSystem(.caption))
+                                        .foregroundColor(Theme.textSecondary)
+                                        .multilineTextAlignment(.leading)
+                                }
                                 Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(Theme.textSecondary.opacity(0.5))
+                            }
+                            .padding()
+                            .background(Theme.panelBackground)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Button(action: {
+                            activeMode = .mates
+                        }) {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Theme.accentColor.opacity(0.15))
+                                        .frame(width: 56, height: 56)
+                                    Image(systemName: "crown.fill")
+                                        .font(.title2)
+                                        .foregroundColor(Theme.accentColor)
+                                }
                                 
-                                Image(systemName: "play.fill")
-                                    .font(.roundedSystem(.subheadline, weight: .bold))
-                                    .foregroundColor(Theme.accentColor)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(L10n.tr("mate_scenarios"))
+                                        .font(.roundedSystem(.title3, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text(L10n.tr("mate_training_desc"))
+                                        .font(.roundedSystem(.caption))
+                                        .foregroundColor(Theme.textSecondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(Theme.textSecondary.opacity(0.5))
+                            }
+                            .padding()
+                            .background(Theme.panelBackground)
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(ScaleButtonStyle())
+                        
+                        Button(action: {
+                            activeMode = .coordinates
+                        }) {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Theme.accentColor.opacity(0.15))
+                                        .frame(width: 56, height: 56)
+                                    Image(systemName: "target")
+                                        .font(.title2)
+                                        .foregroundColor(Theme.accentColor)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(L10n.tr("learn_coordinates"))
+                                        .font(.roundedSystem(.title3, weight: .bold))
+                                        .foregroundColor(.white)
+                                    
+                                    Text(L10n.tr("coord_desc"))
+                                        .font(.roundedSystem(.caption))
+                                        .foregroundColor(Theme.textSecondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(Theme.textSecondary.opacity(0.5))
                             }
                             .padding()
                             .background(Theme.panelBackground)
@@ -345,10 +251,151 @@ struct OpeningTrainerView: View {
                         }
                         .buttonStyle(ScaleButtonStyle())
                     }
+                    .padding(.horizontal)
                 }
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal)
-            .padding(.bottom, 24)
+            
+            // Collapsible Header View at top
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 0)
+                CollapsibleHeaderView(
+                    title: L10n.tr("training"),
+                    subtitle: appLanguage == "de" ? "Wähle einen Modus, um deine Eröffnungen, Matt-Szenarien oder Feld-Visualisierung zu trainieren." : "Select a mode to train your openings, checkmate scenarios, or board visualization.",
+                    iconName: "dumbbell.fill",
+                    scrollOffset: menuScrollOffset
+                )
+            }
+            .background(
+                Theme.background
+                    .opacity(menuScrollOffset < -5 ? 1.0 : 0.0)
+                    .ignoresSafeArea(edges: .top)
+            )
+            .animation(.easeInOut(duration: 0.15), value: menuScrollOffset < -5)
+        }
+        .onPreferenceChange(TaggedScrollOffsetPreferenceKey.self) { values in
+            if let val = values["trainingMenu"] {
+                self.menuScrollOffset = val
+            }
+        }
+    }
+    
+    var openingsGridView: some View {
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        return ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    if isActive {
+                        ScrollOffsetDetector(coordinateSpace: "trainingContainer", tag: "trainingOpenings")
+                    }
+                    
+                    Spacer().frame(height: isIPad ? 224 : 216)
+                    
+                    LazyVGrid(columns: columns, spacing: 16) {
+                        ForEach(Opening.allOpenings) { opening in
+                            OpeningCardView(opening: opening) {
+                                selectedOpeningForColorSelection = opening
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.bottom, 24)
+            }
+            
+            // Collapsible Header View at top
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 0)
+                CollapsibleHeaderView(
+                    title: L10n.tr("openings"),
+                    subtitle: L10n.tr("theory_text"),
+                    iconName: "book.closed.fill",
+                    scrollOffset: openingsScrollOffset,
+                    backAction: {
+                        activeMode = .menu
+                    }
+                )
+            }
+            .background(
+                Theme.background
+                    .opacity(openingsScrollOffset < -5 ? 1.0 : 0.0)
+                    .ignoresSafeArea(edges: .top)
+            )
+            .animation(.easeInOut(duration: 0.15), value: openingsScrollOffset < -5)
+        }
+        .onPreferenceChange(TaggedScrollOffsetPreferenceKey.self) { values in
+            if let val = values["trainingOpenings"] {
+                self.openingsScrollOffset = val
+            }
+        }
+    }
+    
+    var mateScenariosListView: some View {
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        return ZStack(alignment: .top) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    if isActive {
+                        ScrollOffsetDetector(coordinateSpace: "trainingContainer", tag: "trainingMates")
+                    }
+                    
+                    Spacer().frame(height: isIPad ? 224 : 216)
+                    
+                    VStack(spacing: 16) {
+                        ForEach(mateScenariosList) { scenario in
+                            Button(action: {
+                                activeMateScenario = scenario
+                            }) {
+                                HStack(spacing: 16) {
+                                    MateScenarioBoardRow(scenarioId: scenario.id)
+                                        .frame(height: 36)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "play.fill")
+                                        .font(.roundedSystem(.subheadline, weight: .bold))
+                                        .foregroundColor(Theme.accentColor)
+                                }
+                                .padding()
+                                .background(Theme.panelBackground)
+                                .cornerRadius(16)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(ScaleButtonStyle())
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .padding(.bottom, 24)
+            }
+            
+            // Collapsible Header View at top
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 0)
+                CollapsibleHeaderView(
+                    title: L10n.tr("mate_scenarios"),
+                    subtitle: appLanguage == "de" ? "Wähle ein Endspiel-Matt-Szenario aus und setze den maximalen Bot matt. Fehler führen zum sofortigen Abbruch!" : "Select an endgame checkmate scenario and mate the max strength bot. Mistakes lead to immediate termination!",
+                    iconName: "crown.fill",
+                    scrollOffset: matesScrollOffset,
+                    backAction: {
+                        activeMode = .menu
+                    }
+                )
+            }
+            .background(
+                Theme.background
+                    .opacity(matesScrollOffset < -5 ? 1.0 : 0.0)
+                    .ignoresSafeArea(edges: .top)
+            )
+            .animation(.easeInOut(duration: 0.15), value: matesScrollOffset < -5)
+        }
+        .onPreferenceChange(TaggedScrollOffsetPreferenceKey.self) { values in
+            if let val = values["trainingMates"] {
+                self.matesScrollOffset = val
+            }
         }
     }
 }
@@ -364,49 +411,45 @@ struct OpeningCardView: View {
         let _ = appLanguage
         let _ = appTheme
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: "book.closed.fill")
-                        .font(.roundedSystem(.title3, weight: .bold))
-                        .foregroundColor(Theme.highlightSquare)
-                    Spacer()
-                    
-                    Image(systemName: "chevron.right")
-                        .font(.roundedSystem(.caption))
-                        .foregroundColor(Theme.textSecondary.opacity(0.7))
-                }
+            GeometryReader { cardGeo in
+                let cardSize = cardGeo.size.width
+                let boardSize = cardSize * 0.50
                 
-                Spacer()
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(appLanguage == "de" ? opening.nameGerman : opening.name)
-                        .font(.roundedSystem(.subheadline, weight: .bold))
-                        .foregroundColor(.white)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.65)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
+                VStack(spacing: 0) {
+                    // Mini Chess Board with position after 4 moves (8 plies)
+                    MiniChessBoardView(board: previewBoard)
+                        .frame(width: boardSize, height: boardSize)
+                        .cornerRadius(6)
+                        .shadow(color: Color.black.opacity(0.25), radius: 3)
+                        .padding(.top, cardSize * 0.08)
                     
-                    Text(opening.name)
-                        .font(.roundedSystem(.caption2))
-                        .foregroundColor(Theme.textSecondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                    Spacer(minLength: 4)
                     
-                    // Show a quick preview of the first moves
-                    Text(opening.moveNames.prefix(3).joined(separator: " "))
-                        .font(.system(size: 9, design: .monospaced))
-                        .foregroundColor(Theme.highlightSquare.opacity(0.8))
-                        .padding(.top, 2)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(appLanguage == "de" ? opening.nameGerman : opening.name)
+                            .font(.roundedSystem(size: cardSize * 0.08, weight: .bold))
+                            .foregroundColor(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                        
+                        // Show a quick preview of the first moves in a horizontal scroll view, very thin
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            Text(opening.moveNames.prefix(5).joined(separator: " "))
+                                .font(.system(size: cardSize * 0.065, weight: .thin, design: .rounded))
+                                .foregroundColor(Theme.accentColor)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(.horizontal, cardSize * 0.08)
+                    .padding(.bottom, cardSize * 0.08)
                 }
+                .frame(width: cardSize, height: cardSize)
             }
-            .padding(16)
-            .frame(maxWidth: .infinity)
             .aspectRatio(1.0, contentMode: .fit) // Perfect square card
             .background(
                 LinearGradient(
-                    colors: [Theme.panelBackground, Theme.panelBackground.opacity(0.8)],
+                    colors: [Theme.panelBackground, Theme.panelBackground.opacity(0.85)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -419,6 +462,50 @@ struct OpeningCardView: View {
             .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(ScaleButtonStyle())
+    }
+    
+    private var previewBoard: Board {
+        var board = Board()
+        let count = min(8, opening.moves.count)
+        for i in 0..<count {
+            let move = opening.moves[i]
+            _ = board.move(pieceAt: Square(move.start), to: Square(move.end))
+        }
+        return board
+    }
+}
+
+// MARK: - Mini Chess Board View for Opening Card Preview
+struct MiniChessBoardView: View {
+    let board: Board
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            ForEach(0..<8, id: \.self) { rankIndex in
+                HStack(spacing: 0) {
+                    ForEach(0..<8, id: \.self) { fileIndex in
+                        let rank = 7 - rankIndex
+                        let file = fileIndex
+                        let square = Square("\(Square.File(file + 1).rawValue)\(rank + 1)")
+                        let isLight = (file + rank) % 2 != 0
+                        let piece = board.position.piece(at: square)
+                        
+                        ZStack {
+                            Rectangle()
+                                .fill(isLight ? Theme.lightSquare : Theme.darkSquare)
+                            
+                            if let piece = piece {
+                                Image(piece.imageName)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(0.8)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .border(Color.black.opacity(0.35), width: 0.5)
     }
 }
 
@@ -555,37 +642,46 @@ struct OpeningTrainingDetailView: View {
     var body: some View {
         let _ = appLanguage
         let _ = appTheme
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button(action: onBack) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.roundedSystem(.headline))
-                        Text(L10n.tr("openings"))
-                            .font(.roundedSystem(.body, weight: .bold))
-                    }
-                    .foregroundColor(Theme.textMain)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(appLanguage == "de" ? session.opening.nameGerman : session.opening.name)
-                        .font(.roundedSystem(.headline, weight: .bold))
-                        .foregroundColor(.white)
-                    Text(appLanguage == "de" ? "Training" : "Training")
-                        .font(.roundedSystem(.caption))
-                        .foregroundColor(Theme.textSecondary)
-                }
-            }
-            .padding()
-            .background(Theme.panelBackground)
+        
+        GeometryReader { geometry in
+            let screenWidth = geometry.size.width
+            let screenHeight = geometry.size.height
+            let isIPad = UIDevice.current.userInterfaceIdiom == .pad
             
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    // Status message / Error banner
-                    VStack(spacing: 8) {
+            // Adjust board size so it fits along with the moves, toggles, and buttons without scrolling.
+            let maxBoardSize = isIPad ? (screenHeight * 0.65) : (screenHeight * 0.52)
+            let boardWidth = min(screenWidth - 32, maxBoardSize)
+            
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Button(action: onBack) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.roundedSystem(.headline))
+                            Text(L10n.tr("openings"))
+                                .font(.roundedSystem(.body, weight: .bold))
+                        }
+                        .foregroundColor(Theme.textMain)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(appLanguage == "de" ? session.opening.nameGerman : session.opening.name)
+                            .font(.roundedSystem(.headline, weight: .bold))
+                            .foregroundColor(.white)
+                        Text(appLanguage == "de" ? "Training" : "Training")
+                            .font(.roundedSystem(.caption))
+                            .foregroundColor(Theme.textSecondary)
+                    }
+                }
+                .padding()
+                .background(Theme.panelBackground)
+                
+                VStack(spacing: 12) {
+                    // Status message / Error banner (hide standard "Your turn!" message)
+                    if viewModel.errorMessage != nil || viewModel.isTrainingComplete {
                         ZStack {
                             if let error = viewModel.errorMessage {
                                 Text(error)
@@ -610,33 +706,28 @@ struct OpeningTrainingDetailView: View {
                                 .background(Theme.accentColor)
                                 .cornerRadius(8)
                                 .transition(.scale.combined(with: .opacity))
-                            } else {
-                                Text(viewModel.isPlayerTurn ? (appLanguage == "de" ? "Dein Zug! Mache den nächsten korrekten Zug." : "Your turn! Make the next correct move.") : (appLanguage == "de" ? "Warte auf Bot..." : "Waiting for bot..."))
-                                    .font(.subheadline)
-                                    .foregroundColor(Theme.textMain)
-                                    .padding(.vertical, 8)
                             }
                         }
-                        .frame(height: 40)
+                        .frame(height: 36)
+                        .padding(.top, 8)
                         .animation(.easeInOut(duration: 0.25), value: viewModel.errorMessage)
                     }
-                    .padding(.top, 8)
                     
                     // Board
                     OpeningChessBoardView(viewModel: viewModel)
-                        .padding(.horizontal)
+                        .frame(width: boardWidth, height: boardWidth)
+                        .padding(.top, 8)
                     
-                    // Toggle to show/hide moves
+                    Spacer(minLength: 8)
+                    
+                    // Toggle to show/hide moves styled premium using ThemeToggleStyle
                     Toggle(isOn: $showMoveList.animation(.easeInOut(duration: 0.2))) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             Image(systemName: showMoveList ? "eye.fill" : "eye.slash.fill")
-                                .foregroundColor(showMoveList ? Theme.accentColor : Theme.textSecondary)
                             Text(appLanguage == "de" ? "Züge anzeigen" : "Show Moves")
-                                .font(.subheadline.bold())
-                                .foregroundColor(.white)
                         }
                     }
-                    .toggleStyle(SwitchToggleStyle(tint: Theme.accentColor))
+                    .toggleStyle(ThemeToggleStyle())
                     .padding(.horizontal)
                     
                     if showMoveList {
@@ -696,10 +787,10 @@ struct OpeningTrainingDetailView: View {
                                 Image(systemName: viewModel.hintStep > 0 ? "lightbulb.fill" : "lightbulb")
                                 Text(hintButtonText(for: viewModel.hintStep))
                             }
+                            .frame(maxWidth: .infinity)
                             .font(.roundedSystem(.subheadline, weight: .bold))
                             .foregroundColor(viewModel.hintStep > 0 ? .black : Theme.accentColor)
                             .padding(.vertical, 12)
-                            .padding(.horizontal, 16)
                             .background(viewModel.hintStep > 0 ? Theme.accentColor : Theme.panelBackground)
                             .cornerRadius(16)
                             .overlay(
@@ -719,10 +810,10 @@ struct OpeningTrainingDetailView: View {
                                 Image(systemName: "arrow.clockwise")
                                 Text(appLanguage == "de" ? "Neustart" : "Restart")
                             }
+                            .frame(maxWidth: .infinity)
                             .font(.roundedSystem(.subheadline, weight: .bold))
                             .foregroundColor(.white)
                             .padding(.vertical, 12)
-                            .padding(.horizontal, 16)
                             .background(Theme.panelBackground)
                             .cornerRadius(16)
                             .overlay(
@@ -732,20 +823,23 @@ struct OpeningTrainingDetailView: View {
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.top, 8)
+                    
+                    Spacer(minLength: 8)
                     
                     // Info Section
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(appLanguage == "de" ? "Info zur Eröffnung" : "About the Opening")
-                            .font(.roundedSystem(.headline, weight: .bold))
+                            .font(.roundedSystem(.subheadline, weight: .bold))
                             .foregroundColor(.white)
                         
                         Text(session.opening.description)
-                            .font(.roundedSystem(.subheadline))
+                            .font(.roundedSystem(.caption))
                             .foregroundColor(Theme.textSecondary)
-                            .lineSpacing(4)
+                            .lineSpacing(2)
+                            .lineLimit(isIPad ? 5 : 3)
                     }
-                    .padding()
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.panelBackground)
                     .cornerRadius(16)
                     .overlay(
@@ -753,12 +847,9 @@ struct OpeningTrainingDetailView: View {
                             .stroke(Color.white.opacity(0.06), lineWidth: 1)
                     )
                     .padding(.horizontal)
-                    .padding(.top, 8)
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, isIPad ? 24 : 16)
             }
-            
-            Spacer()
         }
         .overlay {
             // Victory success screen overlay
@@ -841,7 +932,7 @@ struct OpeningTrainingDetailView: View {
 struct OpeningChessBoardView: View {
     @AppStorage("appTheme") private var appTheme = "standard"
     @AppStorage("appLanguage") private var appLanguage = "de"
-    @AppStorage("screenShakeEnabled") private var screenShakeEnabled = true
+    @AppStorage("screenShakeEnabled") private var screenShakeEnabled = false
     @State private var shakeOffsetX: CGFloat = 0
     @State private var shakeOffsetY: CGFloat = 0
     @ObservedObject var viewModel: OpeningTrainerViewModel

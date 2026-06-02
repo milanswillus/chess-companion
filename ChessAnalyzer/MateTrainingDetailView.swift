@@ -25,50 +25,74 @@ struct MateTrainingDetailView: View {
     var body: some View {
         let _ = appLanguage
         let _ = appTheme
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
         
         ZStack {
             Theme.background.ignoresSafeArea()
             
             VStack(spacing: 0) {
                 // Header
-                HStack {
+                HStack(spacing: isIPad ? 12 : 8) {
                     Button(action: onBack) {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                                .font(.system(.headline, design: .rounded))
                             Text(L10n.tr("back"))
-                                .font(.system(.headline, design: .rounded).bold())
+                                .fixedSize(horizontal: true, vertical: false)
                         }
-                        .foregroundColor(Theme.accentColor)
+                        .font(isIPad ? .title3.bold() : .body.bold())
+                        .foregroundColor(Theme.textMain)
+                        .padding(.horizontal, isIPad ? 18 : 12)
+                        .padding(.vertical, isIPad ? 14 : 12)
+                        .background(Theme.panelBackground)
+                        .cornerRadius(isIPad ? 12 : 8)
                     }
                     
                     Spacer()
                     
                     Text(appLanguage == "de" ? scenario.nameGerman : scenario.nameEnglish)
-                        .font(.system(.headline, design: .rounded).bold())
-                        .foregroundColor(.white)
+                        .font(.roundedSystem(isIPad ? .title3 : .body, weight: .bold))
+                        .foregroundColor(Theme.textMain)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     
                     Spacer()
                     
-                    HStack(spacing: 16) {
+                    HStack(spacing: isIPad ? 12 : 8) {
                         Button(action: requestHint) {
-                            if isCalculatingHint {
-                                ProgressView()
-                                    .tint(Theme.accentColor)
-                                    .scaleEffect(0.8)
-                                    .frame(width: 20, height: 20)
-                            } else {
-                                Image(systemName: hintBestMoveArrow != nil ? "lightbulb.fill" : "lightbulb")
-                                    .font(.system(.headline, design: .rounded))
-                                    .foregroundColor(hintBestMoveArrow != nil ? .yellow : Theme.accentColor)
+                            ZStack {
+                                if isCalculatingHint {
+                                    ProgressView()
+                                        .tint(Theme.accentColor)
+                                        .scaleEffect(isIPad ? 1.2 : 0.9)
+                                } else {
+                                    Image(systemName: hintBestMoveArrow != nil ? "lightbulb.fill" : "lightbulb")
+                                        .font(.system(size: isIPad ? 22 : 18, weight: .bold))
+                                        .foregroundColor(hintBestMoveArrow != nil ? .yellow : Theme.textSecondary)
+                                }
                             }
+                            .padding(.horizontal, isIPad ? 18 : 12)
+                            .padding(.vertical, isIPad ? 14 : 12)
+                            .background(Theme.panelBackground)
+                            .cornerRadius(isIPad ? 12 : 8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: isIPad ? 12 : 8)
+                                    .stroke(hintBestMoveArrow != nil ? Theme.accentColor : Color.white.opacity(0.06), lineWidth: hintBestMoveArrow != nil ? 2 : 1)
+                            )
                         }
                         .disabled(isProcessing || viewModel.gameOver)
                         
                         Button(action: resetScenario) {
                             Image(systemName: "arrow.clockwise")
-                                .font(.system(.headline, design: .rounded))
-                                .foregroundColor(Theme.accentColor)
+                                .font(.system(size: isIPad ? 22 : 18, weight: .bold))
+                                .foregroundColor(Theme.textSecondary)
+                                .padding(.horizontal, isIPad ? 18 : 12)
+                                .padding(.vertical, isIPad ? 14 : 12)
+                                .background(Theme.panelBackground)
+                                .cornerRadius(isIPad ? 12 : 8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: isIPad ? 12 : 8)
+                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                )
                         }
                     }
                 }
@@ -304,11 +328,24 @@ struct MateTrainingDetailView: View {
         
         let result = await analyzer.evaluate(fen: scenario.fen, depth: 12, limitSkill: false, movetime: 300)
         if let result = result, let mate = result.mate {
-            let m = abs(mate)
+            let newSideToMove = Position(fen: scenario.fen)?.sideToMove ?? .white
+            let mateWhitePOV = newSideToMove == .white ? mate : -mate
+            let playerColor = scenario.initialMoveColor
+            
+            let m: Int? = {
+                if playerColor == .white && mateWhitePOV > 0 { return mateWhitePOV }
+                if playerColor == .black && mateWhitePOV < 0 { return abs(mateWhitePOV) }
+                return nil
+            }()
+            
             await MainActor.run {
-                self.initialMateDistance = m
-                self.currentMateDistance = m
-                updateMateInMoves(m)
+                if let validM = m {
+                    self.initialMateDistance = validM
+                    self.currentMateDistance = validM
+                    updateMateInMoves(validM)
+                } else {
+                    self.mateInMoves = "10+"
+                }
             }
         }
     }
@@ -402,12 +439,21 @@ struct MateTrainingDetailView: View {
         logGameFlow("Player move eval: bestMove=\(evalResult?.bestMove ?? "nil"), mate=\(String(describing: evalResult?.mate))")
         
         if let result = evalResult {
-            if let mate = result.mate {
-                let m = abs(mate)
+            let newSideToMove = Position(fen: fenAfterPlayer)?.sideToMove ?? .white
+            let mateWhitePOV = result.mate.map { newSideToMove == .white ? $0 : -$0 }
+            
+            let m: Int? = {
+                guard let mw = mateWhitePOV else { return nil }
+                if scenario.initialMoveColor == .white && mw > 0 { return mw }
+                if scenario.initialMoveColor == .black && mw < 0 { return abs(mw) }
+                return nil
+            }()
+            
+            if let validM = m {
                 await MainActor.run {
-                    self.currentMateDistance = m
-                    updateMateInMoves(m)
-                    updateWastedMoves(currentMate: m)
+                    self.currentMateDistance = validM
+                    updateMateInMoves(validM)
+                    updateWastedMoves(currentMate: validM)
                 }
             } else {
                 await MainActor.run {
@@ -448,11 +494,21 @@ struct MateTrainingDetailView: View {
             logGameFlow("Evaluating engine move FEN (White to move): \(fenAfterEngine)")
             let postEngineResult = await analyzer.evaluate(fen: fenAfterEngine, depth: 12, limitSkill: false, movetime: 300)
             logGameFlow("Engine move eval: bestMove=\(postEngineResult?.bestMove ?? "nil"), mate=\(String(describing: postEngineResult?.mate))")
-            if let result = postEngineResult, let mate = result.mate {
-                let m = abs(mate)
+            
+            let newSideToMove = Position(fen: fenAfterEngine)?.sideToMove ?? .white
+            let mateWhitePOV = postEngineResult?.mate.map { newSideToMove == .white ? $0 : -$0 }
+            
+            let m: Int? = {
+                guard let mw = mateWhitePOV else { return nil }
+                if scenario.initialMoveColor == .white && mw > 0 { return mw }
+                if scenario.initialMoveColor == .black && mw < 0 { return abs(mw) }
+                return nil
+            }()
+            
+            if let validM = m {
                 await MainActor.run {
-                    self.currentMateDistance = m
-                    updateMateInMoves(m)
+                    self.currentMateDistance = validM
+                    updateMateInMoves(validM)
                 }
             } else {
                 await MainActor.run {

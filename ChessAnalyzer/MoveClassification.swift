@@ -157,3 +157,28 @@ struct DrawBadge: View {
         }
     }
 }
+
+struct TimeUpBadge: View {
+    var size: CGFloat = 24
+    
+    var body: some View {
+        ZStack {
+            // Sticker White Border with Drop Shadow
+            Circle()
+                .fill(Color.white)
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+            
+            // Red Colored Circle (blunder color)
+            Circle()
+                .fill(ClassificationColor.blunder)
+                .frame(width: size * 0.82, height: size * 0.82)
+            
+            Image(systemName: "clock.fill")
+                .font(.system(size: size * 0.44, weight: .bold))
+                .foregroundColor(.white)
+                .shadow(color: Color.black.opacity(0.3), radius: size * 0.02, x: 0, y: size * 0.03)
+        }
+    }
+}
+

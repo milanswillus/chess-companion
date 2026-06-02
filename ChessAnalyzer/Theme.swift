@@ -267,3 +267,188 @@ extension Font {
         return Font.system(size: size, weight: weight, design: .rounded)
     }
 }
+
+struct ThemeToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.8)) {
+                configuration.isOn.toggle()
+            }
+        }) {
+            HStack {
+                configuration.label
+                    .font(.roundedSystem(.body, weight: .bold))
+                    .foregroundColor(configuration.isOn ? Theme.textMain : Theme.textSecondary)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(Theme.panelBackground)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(configuration.isOn ? Theme.accentColor : Color.white.opacity(0.08), lineWidth: configuration.isOn ? 1.5 : 1)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct ScrollOffsetDetector: View {
+    let coordinateSpace: String
+    let tag: String
+    
+    init(coordinateSpace: String, tag: String? = nil) {
+        self.coordinateSpace = coordinateSpace
+        self.tag = tag ?? coordinateSpace
+    }
+    
+    var body: some View {
+        GeometryReader { geo in
+            let val = geo.frame(in: .named(coordinateSpace)).minY
+            Color.clear
+                .preference(
+                    key: TaggedScrollOffsetPreferenceKey.self,
+                    value: [tag: val]
+                )
+        }
+        .frame(height: 0)
+    }
+}
+
+struct TaggedScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: [String: CGFloat] = [:]
+    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
+        value.merge(nextValue()) { _, new in new }
+    }
+}
+
+// Backwards-compatible single-value preference key (kept for any legacy usage)
+struct ScrollOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+struct CollapsibleHeaderView: View {
+    let title: String
+    let subtitle: String
+    let iconName: String
+    let scrollOffset: CGFloat
+    var backAction: (() -> Void)? = nil
+    
+    // React to theme changes immediately
+    @AppStorage("appTheme") private var appTheme = "standard"
+    
+    var body: some View {
+        let _ = appTheme // force dependency
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        let progress = min(1.0, max(0.0, -scrollOffset / 120.0))
+        let cardRadius: CGFloat = isIPad ? 24 : 16
+        
+        // Interpolated values
+        let iconSize: CGFloat = 48 - (progress * 24) // 48 → 24
+        let titleSize: CGFloat = isIPad ? 34 : 28  // largeTitle base
+        let collapsedTitleSize: CGFloat = isIPad ? 22 : 20  // title3 base
+        let interpolatedTitleSize = titleSize - (progress * (titleSize - collapsedTitleSize))
+        let totalHeight: CGFloat = 64 + (1.0 - progress) * 136 // 200 → 64
+        let horizontalPadding: CGFloat = isIPad ? 24 : 16
+        
+        ZStack(alignment: .top) {
+            // Floating Card Background (matching tab bar)
+            RoundedRectangle(cornerRadius: cardRadius)
+                .fill(Theme.panelBackground)
+                .opacity(progress)
+                .overlay(
+                    RoundedRectangle(cornerRadius: cardRadius)
+                        .stroke(Color.white.opacity(0.06 * progress), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.35 * progress), radius: 10, x: 0, y: 4)
+            
+            // Content that morphs from centered to left-aligned
+            GeometryReader { geo in
+                let containerWidth = geo.size.width
+                let innerPadding: CGFloat = isIPad ? 24 : 20
+                
+                let hasBack = backAction != nil
+                let backButtonWidth: CGFloat = 75
+                let backButtonHeight: CGFloat = 34
+                let backShift: CGFloat = hasBack ? (backButtonWidth + 12) : 0
+                
+                // Back Button (if provided)
+                if let backAction = backAction {
+                    let expandedY: CGFloat = 16 + backButtonHeight / 2
+                    let collapsedY: CGFloat = totalHeight / 2
+                    let backY = expandedY + progress * (collapsedY - expandedY)
+                    let backX = innerPadding + backButtonWidth / 2
+                    
+                    Button(action: backAction) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                            Text(L10n.tr("back"))
+                                .font(.roundedSystem(.subheadline, weight: .bold))
+                        }
+                        .foregroundColor(Theme.textMain)
+                        .frame(width: backButtonWidth, height: backButtonHeight)
+                        .background(progress > 0.5 ? Color.white.opacity(0.08) : Theme.panelBackground)
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.white.opacity(progress > 0.5 ? 0.08 : 0.0), lineWidth: 1)
+                        )
+                    }
+                    .position(x: backX, y: backY)
+                }
+                
+                // Icon
+                let iconExpandedX = containerWidth / 2
+                let iconCollapsedX = innerPadding + backShift + iconSize / 2
+                let iconX = iconExpandedX + progress * (iconCollapsedX - iconExpandedX)
+                
+                let iconExpandedY: CGFloat = totalHeight * 0.28
+                let iconCollapsedY: CGFloat = totalHeight / 2
+                let iconY = iconExpandedY + progress * (iconCollapsedY - iconExpandedY)
+                
+                Image(systemName: iconName)
+                    .font(.system(size: iconSize, weight: .medium))
+                    .foregroundStyle(Theme.primaryGradient)
+                    .position(x: iconX, y: iconY)
+                
+                // Title
+                let titleExpandedX = containerWidth / 2
+                let titleCollapsedX = innerPadding + backShift + iconSize + 16 + estimateTextWidth(title, size: interpolatedTitleSize) / 2
+                let titleX = titleExpandedX + progress * (titleCollapsedX - titleExpandedX)
+                
+                let titleExpandedY: CGFloat = totalHeight * 0.56
+                let titleCollapsedY: CGFloat = totalHeight / 2
+                let titleY = titleExpandedY + progress * (titleCollapsedY - titleExpandedY)
+                
+                Text(title)
+                    .font(.system(size: interpolatedTitleSize, weight: .bold, design: .rounded))
+                    .foregroundColor(Theme.textMain)
+                    .position(x: titleX, y: titleY)
+                
+                // Subtitle (fades out)
+                Text(subtitle)
+                    .font(.roundedSystem(.subheadline))
+                    .foregroundColor(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 16)
+                    .frame(width: containerWidth)
+                    .position(x: containerWidth / 2, y: totalHeight * 0.76)
+                    .opacity(Double(1.0 - min(1.0, progress * 2.5)))
+            }
+        }
+        .frame(height: totalHeight)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.top, isIPad ? 16 : 8)
+        .animation(.spring(response: 0.35, dampingFraction: 0.9), value: progress)
+    }
+    
+    private func estimateTextWidth(_ text: String, size: CGFloat) -> CGFloat {
+        // Rough estimate: average character width ≈ 0.58 * font size for bold rounded
+        return CGFloat(text.count) * size * 0.58
+    }
+}
+

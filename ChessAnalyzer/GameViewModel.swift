@@ -46,6 +46,12 @@ class GameViewModel: ObservableObject {
     @Published var pendingPromotionMove: Move? = nil
     @Published var isAnalysisMode: Bool = false
     
+    // Friend Mode and custom rules
+    @Published var isFriendMode: Bool = false
+    @Published var flipBoardAfterMoves: Bool = true
+    @Published var allowHints: Bool = true
+    @Published var showBestMovesRetrospectively: Bool = false
+    
     // History Explorer
     @Published var history: [HistoryNode] = []
     @Published var historyIndex: Int = 0
@@ -64,6 +70,7 @@ class GameViewModel: ObservableObject {
     // Time controls (in seconds)
     @Published var isTimed: Bool = false
     @Published var timeControlSeconds: Int = 600
+    @Published var incrementSeconds: Int = 0
     
     @Published var whiteTimeRemaining: Int = 600
     @Published var blackTimeRemaining: Int = 600
@@ -74,14 +81,14 @@ class GameViewModel: ObservableObject {
     @Published var expiredPlayerColor: Piece.Color? = nil
     
     var isPlayerTurn: Bool {
-        if isAnalysisMode {
+        if isAnalysisMode || isFriendMode {
             return !gameOver
         }
         return !gameOver && board.position.sideToMove == playerColor
     }
     
     var isEngineTurn: Bool {
-        if isAnalysisMode {
+        if isAnalysisMode || isFriendMode {
             return false
         }
         return !gameOver && board.position.sideToMove != playerColor
@@ -93,7 +100,15 @@ class GameViewModel: ObservableObject {
     
     /// Whether the board should be flipped (player's pieces at the bottom)
     var boardFlipped: Bool {
-        playerColor == .black
+        if isFriendMode {
+            if flipBoardAfterMoves {
+                let activeBoard = displayBoard
+                return activeBoard.position.sideToMove == .black
+            } else {
+                return playerColor == .black
+            }
+        }
+        return playerColor == .black
     }
     
     // Display properties for history explorer
@@ -311,7 +326,7 @@ class GameViewModel: ObservableObject {
         self.board = Board()
     }
     
-    func startGame(from fen: String, playerColor: Piece.Color, timed: Bool, durationSeconds: Int) {
+    func startGame(from fen: String, playerColor: Piece.Color, timed: Bool, durationSeconds: Int, incrementSeconds: Int = 0) {
         self.playerColorChoice = playerColor == .white ? .white : .black
         self.playerColor = playerColor
         
@@ -341,6 +356,7 @@ class GameViewModel: ObservableObject {
         self.inOpening = false
         self.isTimed = timed
         self.timeControlSeconds = durationSeconds
+        self.incrementSeconds = incrementSeconds
         
         self.whiteTimeRemaining = durationSeconds
         self.blackTimeRemaining = durationSeconds
@@ -353,7 +369,7 @@ class GameViewModel: ObservableObject {
         pushHistory(classification: nil, bestMoveStr: nil, movingColor: nil, evalScore: nil, mate: nil, evalDrop: nil)
     }
     
-    func startGame(timed: Bool, durationSeconds: Int) {
+    func startGame(timed: Bool, durationSeconds: Int, incrementSeconds: Int = 0) {
         // Determine player color
         switch playerColorChoice {
         case .white: playerColor = .white
@@ -382,6 +398,7 @@ class GameViewModel: ObservableObject {
         self.inOpening = true
         self.isTimed = timed
         self.timeControlSeconds = durationSeconds
+        self.incrementSeconds = incrementSeconds
         
         self.whiteTimeRemaining = durationSeconds
         self.blackTimeRemaining = durationSeconds
@@ -430,6 +447,15 @@ class GameViewModel: ObservableObject {
         self.historyIndex = self.history.count - 1
     }
     
+    private func applyIncrement() {
+        guard isTimed && incrementSeconds > 0 else { return }
+        if board.position.sideToMove == .white {
+            blackTimeRemaining += incrementSeconds
+        } else {
+            whiteTimeRemaining += incrementSeconds
+        }
+    }
+    
     private func startTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
@@ -464,7 +490,9 @@ class GameViewModel: ObservableObject {
             HapticManager.shared.playNotification(.warning)
         } else {
             self.expiredPlayerColor = color
-            self.showTimeExpiredAlert = true
+            self.gameOver = true
+            let loser = color == .white ? "Weiß" : "Schwarz"
+            self.gameResult = "\(loser) verliert durch Zeitüberschreitung"
             HapticManager.shared.playNotification(.warning)
         }
     }
@@ -482,6 +510,10 @@ class GameViewModel: ObservableObject {
     func continueWithoutTime() {
         self.isTimed = false
         self.showTimeExpiredAlert = false
+        self.gameOver = false
+        self.expiredPlayerColor = nil
+        self.gameResult = ""
+        timer?.invalidate()
     }
     
     func select(square: Square) {
@@ -546,7 +578,7 @@ class GameViewModel: ObservableObject {
                     HapticManager.shared.playSelection()
                 }
             }
-        } else if (isEngineTurn || isProcessing) && !isAnalysisMode {
+        } else if (isEngineTurn || isProcessing) && !isAnalysisMode && !isFriendMode {
             // Premove logic
             if let selected = selectedSquare {
                 if let piece = virtualBoard.position.piece(at: selected),
@@ -626,6 +658,7 @@ class GameViewModel: ObservableObject {
                 }
             }
             
+            applyIncrement()
             checkGameState()
             updateVirtualBoard()
             NotificationCenter.default.post(name: .didMakeMove, object: self, userInfo: ["move": lastMove ?? move])
@@ -645,6 +678,7 @@ class GameViewModel: ObservableObject {
         
         HapticManager.shared.playImpact(.medium)
         
+        applyIncrement()
         checkGameState()
         updateVirtualBoard()
         NotificationCenter.default.post(name: .didMakeMove, object: self, userInfo: ["move": completedMove])
@@ -664,15 +698,19 @@ class GameViewModel: ObservableObject {
                 lastMove = completedMove
             }
             
+            applyIncrement()
             checkGameState()
             updateVirtualBoard()
         }
     }
     
-    /// Calculate classification counts for a specific color
-    func classificationCounts(for color: Piece.Color) -> [MoveClassification: Int] {
+    /// Calculate classification counts for a specific color up to an optional index limit
+    func classificationCounts(for color: Piece.Color, upTo index: Int? = nil) -> [MoveClassification: Int] {
         var counts: [MoveClassification: Int] = [:]
-        for node in history {
+        let limit = index ?? (history.count - 1)
+        guard limit >= 0 && limit < history.count else { return counts }
+        for i in 0...limit {
+            let node = history[i]
             if node.movingColor == color, let c = node.classification, c != .none {
                 counts[c, default: 0] += 1
             }
@@ -680,9 +718,9 @@ class GameViewModel: ObservableObject {
         return counts
     }
     
-    /// Calculated accuracy for the player (0 to 100)
-    var playerAccuracy: Double {
-        let counts = classificationCounts(for: playerColor)
+    /// Calculate accuracy for a specific color up to an optional index limit
+    func accuracy(for color: Piece.Color, upTo index: Int? = nil) -> Double {
+        let counts = classificationCounts(for: color, upTo: index)
         var totalWeight = 0.0
         var totalMoves = 0.0
         
@@ -710,6 +748,11 @@ class GameViewModel: ObservableObject {
             return 100.0
         }
         return totalWeight / totalMoves
+    }
+    
+    /// Calculated accuracy for the player (0 to 100), history-aware when exploring history
+    var playerAccuracy: Double {
+        accuracy(for: playerColor, upTo: isExploringHistory ? historyIndex : (history.count - 1))
     }
     
     /// Returns captured pieces for each side based on the current board state.

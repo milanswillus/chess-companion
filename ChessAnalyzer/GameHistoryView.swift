@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GameHistoryView: View {
+    var isActive: Bool = true
     @ObservedObject var store = GameHistoryStore.shared
     @AppStorage("appLanguage") private var appLanguage = "de"
     @AppStorage("appTheme") private var appTheme = "standard"
@@ -9,32 +10,22 @@ struct GameHistoryView: View {
         .brilliant, .great, .best, .excellent, .good, .book, .inaccuracy, .mistake, .blunder
     ]
     
+    @State private var scrollOffset: CGFloat = 0
+    
     var body: some View {
         let _ = appLanguage
         let _ = appTheme
-        ZStack {
+        let isIPad = UIDevice.current.userInterfaceIdiom == .pad
+        ZStack(alignment: .top) {
             Theme.background.ignoresSafeArea()
             
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    // Centered Header
-                    VStack(spacing: 8) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 48))
-                            .foregroundStyle(Theme.primaryGradient)
-                            .padding(.bottom, 8)
-                        
-                        Text(L10n.tr("game_history"))
-                            .font(.largeTitle.bold())
-                            .foregroundColor(Theme.textMain)
-                        
-                        Text(L10n.tr("game_history_desc"))
-                            .font(.subheadline)
-                            .foregroundColor(Theme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 16)
+                    if isActive {
+                        ScrollOffsetDetector(coordinateSpace: "historyContainer")
                     }
-                    .padding(.top, 24)
+                    
+                    Spacer().frame(height: isIPad ? 224 : 216)
                     
                     if !store.games.isEmpty {
                         Button(action: {
@@ -92,6 +83,29 @@ struct GameHistoryView: View {
                 }
                 .padding(.bottom, 24)
             }
+            
+            // Collapsible Header View at top
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 0)
+                CollapsibleHeaderView(
+                    title: L10n.tr("game_history"),
+                    subtitle: L10n.tr("game_history_desc"),
+                    iconName: "clock.arrow.circlepath",
+                    scrollOffset: scrollOffset
+                )
+            }
+            .background(
+                Theme.background
+                    .opacity(scrollOffset < -5 ? 1.0 : 0.0)
+                    .ignoresSafeArea(edges: .top)
+            )
+            .animation(.easeInOut(duration: 0.15), value: scrollOffset < -5)
+        }
+        .coordinateSpace(name: "historyContainer")
+        .onPreferenceChange(TaggedScrollOffsetPreferenceKey.self) { values in
+            if let val = values["historyContainer"] {
+                self.scrollOffset = val
+            }
         }
     }
 }
@@ -106,7 +120,7 @@ struct GameRowView: View {
     private var colorCircle: some View {
         Circle()
             .fill(game.playerColor == "white" ? Color.white : Color.black)
-            .frame(width: 14, height: 14)
+            .frame(width: 20, height: 20)
             .overlay(
                 Circle()
                     .stroke(Color.white.opacity(0.4), lineWidth: game.playerColor == "black" ? 1 : 0)
@@ -114,9 +128,15 @@ struct GameRowView: View {
     }
     
     private var resultColor: Color {
-        if game.gameResult.contains("Schachmatt") {
-            return game.gameResult.contains("Weiß") && game.playerColor == "white" ? Theme.winColor :
-                   game.gameResult.contains("Schwarz") && game.playerColor == "black" ? Theme.winColor : Theme.lossColor
+        if game.gameResult.contains("Schachmatt") || game.gameResult.lowercased().contains("mate") {
+            let isWhiteWinner = game.gameResult.contains("Weiß") || game.gameResult.lowercased().contains("white")
+            let won = (isWhiteWinner && game.playerColor == "white") || (!isWhiteWinner && game.playerColor == "black")
+            return won ? Theme.winColor : Theme.lossColor
+        }
+        if game.gameResult.contains("Zeitüberschreitung") || game.gameResult.lowercased().contains("time") {
+            let isWhiteLoser = game.gameResult.contains("Weiß") || game.gameResult.lowercased().contains("white")
+            let won = (isWhiteLoser && game.playerColor == "black") || (!isWhiteLoser && game.playerColor == "white")
+            return won ? Theme.winColor : Theme.lossColor
         }
         return .gray
     }
@@ -124,29 +144,29 @@ struct GameRowView: View {
     var body: some View {
         let _ = appLanguage
         let _ = appTheme
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             // Top row: date + color + result
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 colorCircle
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.translateResult(game.gameResult))
-                        .font(.system(.subheadline, design: .rounded).bold())
+                        .font(.system(.headline, design: .rounded).bold())
                         .foregroundColor(resultColor)
                     Text(game.date, style: .date)
-                        .font(.system(.caption, design: .rounded))
+                        .font(.system(.subheadline, design: .rounded))
                         .foregroundColor(Theme.textSecondary)
                 }
                 
                 Spacer()
                 
                 // Final Elo
-                VStack(alignment: .trailing, spacing: 2) {
+                VStack(alignment: .trailing, spacing: 4) {
                     Text(L10n.tr("final_elo"))
-                        .font(.system(.caption2, design: .rounded))
+                        .font(.system(.caption, design: .rounded))
                         .foregroundColor(Theme.textSecondary)
                     Text("\(game.finalElo)")
-                        .font(.system(.headline, design: .rounded).bold())
+                        .font(.system(.title2, design: .rounded).bold())
                         .foregroundColor(Theme.accentColor)
                 }
                 
@@ -154,9 +174,9 @@ struct GameRowView: View {
                     store.delete(game: game)
                 }) {
                     Image(systemName: "trash")
-                        .font(.system(.subheadline, design: .rounded))
+                        .font(.system(.headline, design: .rounded))
                         .foregroundColor(Theme.lossColor.opacity(0.8))
-                        .padding(6)
+                        .padding(8)
                         .background(Theme.lossColor.opacity(0.12))
                         .clipShape(Circle())
                 }
@@ -168,20 +188,20 @@ struct GameRowView: View {
             let nonZero = displayOrder.filter { (counts[$0] ?? 0) > 0 }
             if !nonZero.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         ForEach(nonZero, id: \.self) { cls in
-                            HStack(spacing: 3) {
-                                MoveClassificationBadge(classification: cls, size: 14)
+                            HStack(spacing: 5) {
+                                MoveClassificationBadge(classification: cls, size: 22)
                                 Text("\(counts[cls]!)")
-                                    .font(.system(.caption2, design: .rounded).monospacedDigit().bold())
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .font(.system(.body, design: .rounded).monospacedDigit().bold())
+                                    .foregroundColor(.white.opacity(0.9))
                             }
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 3)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
                             .background(Color.white.opacity(0.07))
-                            .cornerRadius(8)
+                            .cornerRadius(10)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 10)
                                     .stroke(Color.white.opacity(0.06), lineWidth: 1)
                             )
                         }
@@ -189,6 +209,6 @@ struct GameRowView: View {
                 }
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
     }
 }
