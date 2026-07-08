@@ -223,48 +223,6 @@ class StockfishAnalyzer: ObservableObject {
         return false
     }
     
-    private func hasEnPrisePiece(board: Board, color: Piece.Color) -> Bool {
-        let opponentColor = color == .white ? Piece.Color.black : Piece.Color.white
-        
-        for ourSq in Square.allCases {
-            guard let ourPiece = board.position.piece(at: ourSq),
-                  ourPiece.color == color,
-                  ourPiece.kind != .pawn && ourPiece.kind != .king else { continue }
-            
-            let ourPieceVal = pieceValue(ourPiece.kind)
-            
-            for oppSq in Square.allCases {
-                guard let oppPiece = board.position.piece(at: oppSq),
-                      oppPiece.color == opponentColor else { continue }
-                
-                if board.legalMoves(forPieceAt: oppSq).contains(ourSq) {
-                    let oppPieceVal = pieceValue(oppPiece.kind)
-                    if oppPieceVal < ourPieceVal {
-                        return true
-                    }
-                    
-                    var boardCaptured = board
-                    if boardCaptured.move(pieceAt: oppSq, to: ourSq) != nil {
-                        var canRecapture = false
-                        for recaptureSq in Square.allCases {
-                            if let recPiece = boardCaptured.position.piece(at: recaptureSq),
-                               recPiece.color == color {
-                                if boardCaptured.legalMoves(forPieceAt: recaptureSq).contains(ourSq) {
-                                    canRecapture = true
-                                    break
-                                }
-                            }
-                        }
-                        if !canRecapture {
-                            return true
-                        }
-                    }
-                }
-            }
-        }
-        return false
-    }
-    
     func classifyMove(
         evalBefore: Int, 
         evalAfter: Int, 
@@ -275,24 +233,32 @@ class StockfishAnalyzer: ObservableObject {
         boardAfter: Board? = nil
     ) -> MoveClassification {
         if isBook { return .book }
-        
-        // 1. Calculate win probability drop using clamped evaluations
-        // Clamping prevents saturation at extreme evaluations (+15 vs +10, etc.)
-        let clampLimit = 600
+
+        // All evaluations are from the moving side's point of view (higher = better
+        // for the mover), in centipawns, with mate encoded as ±10000.
+
+        // 1. Win-probability drop. Clamp generously so extreme values (especially
+        // the mate sentinel) don't dominate, while still leaving a small gradient
+        // inside clearly-winning territory.
+        let clampLimit = 1200
         let clampedBefore = max(-clampLimit, min(clampLimit, evalBefore))
         let clampedAfter = max(-clampLimit, min(clampLimit, evalAfter))
-        
+
         let wBefore = winProbability(centipawns: clampedBefore)
         let wAfter = winProbability(centipawns: clampedAfter)
-        var drop = wBefore - wAfter
-        
-        // 2. Calculate raw centipawn loss
+        var drop = wBefore - wAfter          // positive => the position got worse
+        let swing = wAfter - wBefore         // positive => the position improved
+
+        // 2. Raw centipawn loss. Near equality a small win-probability change can
+        // still hide a large material blunder, so we use raw loss as a floor —
+        // but ONLY while the mover is not still clearly winning. Giving back part
+        // of a winning advantage while remaining clearly winning is not a real
+        // mistake and must not be flagged as one (this is what made evaluations
+        // look "wrong" in heavily winning positions).
         let rawLoss = evalBefore - evalAfter
-        
-        // 3. Apply raw loss correction for lost positions or large material blunders
-        let bothWinning = evalBefore >= 600 && evalAfter >= 600
-        
-        if !bothWinning && rawLoss > 0 {
+        let stillClearlyWinning = evalAfter >= 400
+
+        if !stillClearlyWinning && rawLoss > 0 {
             var virtualDrop = 0.0
             if rawLoss >= 300 {
                 virtualDrop = 22.0 // Blunder threshold
@@ -301,83 +267,48 @@ class StockfishAnalyzer: ObservableObject {
             } else if rawLoss >= 80 {
                 virtualDrop = 6.0  // Inaccuracy threshold
             }
-            
             drop = max(drop, virtualDrop)
         }
-        
-        // 4. Downgrade severity if the resulting position is still clearly winning (e.g. evalAfter >= 400)
-        if evalAfter >= 400 {
-            if drop >= 20.0 {
-                drop = 9.0 // Downgrade blunder to inaccuracy
-            } else if drop >= 10.0 {
-                drop = 4.0 // Downgrade mistake to good
-            }
-        }
-        
-        // 4b. Custom raw loss correction for extremely winning positions (both evaluations >= 600)
-        // to prevent saturation at +9.0 where win probability drop would stay at 0.0.
-        if bothWinning && rawLoss > 0 {
-            var virtualDrop = 0.0
-            if rawLoss >= 400 {
-                virtualDrop = 15.0 // Mistake threshold
-            } else if rawLoss >= 200 {
-                virtualDrop = 7.5  // Inaccuracy threshold
-            } else if rawLoss >= 120 {
-                virtualDrop = 3.5  // Good threshold
-            } else if rawLoss >= 50 {
-                virtualDrop = 1.0  // Excellent threshold
-            }
-            drop = max(drop, virtualDrop)
-        }
-        
-        // Miss: Missed opportunity to gain/maintain a winning position, resulting in an equal or worse outcome.
-        if evalBefore >= 200 && evalAfter <= 100 && drop >= 10.0 {
+
+        // Miss: had a clear advantage and threw most of it away toward equality.
+        if evalBefore >= 200 && evalAfter <= 75 && drop >= 10.0 {
             return .missed
         }
-        
-        // Sacrifice check for Brilliant Move
-        let isSac = {
-            if let m = move, let bBefore = boardBefore, let bAfter = boardAfter {
-                let activeColor = bBefore.position.sideToMove
-                return isSacrifice(move: m, boardBefore: bBefore, boardAfter: bAfter) ||
-                       (!hasEnPrisePiece(board: bBefore, color: activeColor) && hasEnPrisePiece(board: bAfter, color: activeColor))
-            }
-            return false
-        }()
-        
-        // Brilliant: sound sacrifice (isBest or drop < 0.5, is a sacrifice, position not already winning, position not losing)
-        if isSac && (isBest || drop < 0.5) && evalBefore < 600 && evalAfter >= -150 {
+
+        // Brilliant and Great are reserved for moves that are essentially the
+        // engine's top choice — never for mediocre moves that merely look flashy.
+        let isTopMove = isBest || drop < 1.0
+
+        // Brilliant: a genuine piece sacrifice (the moved piece itself is left
+        // hanging) that keeps the game at least equal, played in a position that
+        // is not already completely winning. We deliberately no longer treat
+        // "leaves some piece attackable" as a sacrifice — that produced quiet,
+        // unintuitive brilliants.
+        if isTopMove,
+           let m = move, let bBefore = boardBefore, let bAfter = boardAfter,
+           isSacrifice(move: m, boardBefore: bBefore, boardAfter: bAfter),
+           evalAfter >= -100,      // not losing after the sacrifice
+           evalBefore < 500 {      // not already crushing beforehand
             return .brilliant
         }
-        
-        // Great Move: critical equalizer, breakthrough, or depth anomaly
-        let isGreat = {
-            if isBest || drop < 0.5 {
-                // Equalizer: losing -> equal
-                if evalBefore <= -150 && evalAfter >= -100 {
-                    return true
-                }
-                // Breakthrough: equal -> winning
-                if evalBefore >= -100 && evalBefore <= 100 && evalAfter >= 200 {
-                    return true
-                }
-                // Depth anomaly (engine initially underestimated)
-                if drop <= -2.0 {
-                    return true
-                }
+
+        // Great: a decisive turning point that was also the best move. We require
+        // a LARGE win-probability swing so ordinary strong moves never qualify.
+        if isTopMove {
+            // Recovered a clearly worse/losing position back to at least equal.
+            if evalBefore <= -200 && evalAfter >= -50 && swing >= 12.0 {
+                return .great
             }
-            return false
-        }()
-        
-        if isGreat {
-            return .great
+            // Converted a balanced position into a clearly winning one.
+            if evalBefore <= 60 && evalAfter >= 350 && swing >= 15.0 {
+                return .great
+            }
         }
-        
+
         if isBest {
             return .best
         }
-        
-        // Standard classifications based on Expected % Loss in Win Probability
+        // Standard classifications based on expected win-probability loss.
         if drop < 2.0 {
             return .excellent
         } else if drop < 5.0 {

@@ -246,7 +246,7 @@ struct ContentView: View {
             let fen = viewModel.board.position.fen
             let activeColor = viewModel.isFriendMode ? viewModel.board.position.sideToMove : viewModel.playerColor
             Task {
-                let result = await evaluateWithCache(fen: fen, depth: 10, limitSkill: false, movetime: 300)
+                let result = await evaluateWithCache(fen: fen, depth: 12, limitSkill: false, movetime: 500)
                 
                 await MainActor.run {
                     isAnalyzingHint = false
@@ -722,8 +722,8 @@ struct ContentView: View {
         .coordinateSpace(name: "gameTabContainer")
     }
     
-    private func evaluateWithCache(fen: String, depth: Int = 10, limitSkill: Bool = false, movetime: Int? = nil) async -> (bestMove: String, score: Int, mate: Int?)? {
-        let isCacheable = (depth == 10 && !limitSkill)
+    private func evaluateWithCache(fen: String, depth: Int = 12, limitSkill: Bool = false, movetime: Int? = nil) async -> (bestMove: String, score: Int, mate: Int?)? {
+        let isCacheable = (depth == 12 && !limitSkill)
         if isCacheable, let cached = evaluationCache[fen] {
             return cached
         }
@@ -761,7 +761,7 @@ struct ContentView: View {
             let fenAfterPlayer = viewModel.board.position.fen
             if showAnalysis || viewModel.isChallengeMode {
                 analyzer.debugStatus = "Analysiere Zug..."
-                let evalBeforeResult = await evaluateWithCache(fen: fenBefore, depth: 10, limitSkill: false, movetime: 300)
+                let evalBeforeResult = await evaluateWithCache(fen: fenBefore, depth: 12, limitSkill: false, movetime: 500)
                 let evalBefore = evalBeforeResult?.score ?? 0
                 
                 await MainActor.run {
@@ -776,7 +776,7 @@ struct ContentView: View {
                 } else if viewModel.gameOver {
                     pureEvalAfterResult = (bestMove: "", score: 0, mate: nil)
                 } else {
-                    pureEvalAfterResult = await evaluateWithCache(fen: fenAfterPlayer, depth: 10, limitSkill: false, movetime: 300)
+                    pureEvalAfterResult = await evaluateWithCache(fen: fenAfterPlayer, depth: 12, limitSkill: false, movetime: 500)
                 }
                 
                 evalAfter = pureEvalAfterResult?.score ?? 0
@@ -875,7 +875,7 @@ struct ContentView: View {
                     } else if viewModel.gameOver {
                         postEngineResult = (bestMove: "", score: 0, mate: nil)
                     } else {
-                        postEngineResult = await evaluateWithCache(fen: viewModel.board.position.fen, depth: 10, limitSkill: false, movetime: 300)
+                        postEngineResult = await evaluateWithCache(fen: viewModel.board.position.fen, depth: 12, limitSkill: false, movetime: 500)
                     }
                     let engineEvalAfterScore = postEngineResult?.score ?? 0
                     
@@ -991,7 +991,7 @@ struct ContentView: View {
                 let fen = analysisViewModel.displayBoard.position.fen
                 isCalculatingAnalysisBestMove = color
                 Task {
-                    let result = await evaluateWithCache(fen: fen, depth: 10, limitSkill: false, movetime: 300)
+                    let result = await evaluateWithCache(fen: fen, depth: 12, limitSkill: false, movetime: 500)
                     await MainActor.run {
                         isCalculatingAnalysisBestMove = nil
                         guard analysisViewModel.displayBoard.position.fen == fen else { return }
@@ -1023,6 +1023,7 @@ struct ContentView: View {
         }
     }
     
+
     private func processAnalysisMoveSequence() async {
         guard let lastMove = analysisViewModel.lastMove,
               let fenBefore = analysisViewModel.lastPlayerMoveFenBefore else { return }
@@ -1033,7 +1034,7 @@ struct ContentView: View {
         if showAnalysisTabAnalysis {
             analyzer.debugStatus = "Analysiere Zug..."
             
-            let evalBeforeResult = await evaluateWithCache(fen: fenBefore, depth: 10, limitSkill: false, movetime: 300)
+            let evalBeforeResult = await evaluateWithCache(fen: fenBefore, depth: 12, limitSkill: false, movetime: 500)
             let evalBefore = evalBeforeResult?.score ?? 0
             
             await MainActor.run {
@@ -1046,7 +1047,7 @@ struct ContentView: View {
             } else if analysisViewModel.gameOver {
                 pureEvalAfterResult = (bestMove: "", score: 0, mate: nil)
             } else {
-                pureEvalAfterResult = await evaluateWithCache(fen: fenAfter, depth: 10, limitSkill: false, movetime: 300)
+                pureEvalAfterResult = await evaluateWithCache(fen: fenAfter, depth: 12, limitSkill: false, movetime: 500)
             }
             
             let evalAfter = pureEvalAfterResult?.score ?? 0
@@ -2770,7 +2771,9 @@ struct EvalBarView: View {
             // Score text on the winning side
             if let evalScore = eval {
                 let scoreVal = Double(evalScore) / 100.0
-                let absScoreStr = String(format: "%.1f", abs(scoreVal))
+                // The mate sentinel (±10000) must never render as a raw "100.0".
+                let isMate = abs(evalScore) >= 5000
+                let absScoreStr = isMate ? "M" : String(format: "%.1f", abs(scoreVal))
                 
                 // Determine if the text should be at the top or bottom
                 // NOT flipped: White winning (scoreVal > 0) -> bottom, Black winning (scoreVal < 0) -> top
