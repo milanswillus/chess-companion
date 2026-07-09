@@ -102,7 +102,7 @@ struct L10n {
         "app_icon_selection": ["de": "App-Symbol", "en": "App Icon"],
         "danger_zone": ["de": "Gefahrenzone", "en": "Danger Zone"],
         "about_app": ["de": "Über die App", "en": "About the App"],
-        "about_desc": ["de": "ChessAnalyzer v1.1.0\nEntwickelt für Schachtraining und Spielanalyse.", "en": "ChessAnalyzer v1.1.0\nDeveloped for chess training and game analysis."],
+        "about_desc": ["de": "Chess Companion\nSpiele, trainiere und analysiere deine Schachpartien.\nby Milan", "en": "Chess Companion\nPlay, train, and analyze your chess games.\nby Milan"],
         
         // Game Setup Screen
         "singleplayer": ["de": "Einzelspiel", "en": "Singleplayer"],

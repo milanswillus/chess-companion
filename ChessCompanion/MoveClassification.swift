@@ -82,17 +82,12 @@ struct MoveClassificationBadge: View {
     var body: some View {
         if classification != .none {
             ZStack {
-                // Sticker White Border with Drop Shadow
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: size, height: size)
-                    .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
-                
-                // Colored Circle
+                // Colored Circle with Drop Shadow
                 Circle()
                     .fill(classification.color)
-                    .frame(width: size * 0.82, height: size * 0.82)
-                
+                    .frame(width: size, height: size)
+                    .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+
                 // Symbol/Icon with subtle 3D shadow
                 Group {
                     if let icon = classification.iconName {
@@ -115,17 +110,12 @@ struct CheckmateBadge: View {
     
     var body: some View {
         ZStack {
-            // Sticker White Border with Drop Shadow
-            Circle()
-                .fill(Color.white)
-                .frame(width: size, height: size)
-                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
-            
-            // Red Colored Circle (blunder color)
+            // Red Colored Circle (blunder color) with Drop Shadow
             Circle()
                 .fill(ClassificationColor.blunder)
-                .frame(width: size * 0.82, height: size * 0.82)
-            
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+
             Text("#")
                 .font(.system(size: size * 0.46, weight: .black, design: .rounded))
                 .foregroundColor(.white)
@@ -139,17 +129,12 @@ struct DrawBadge: View {
     
     var body: some View {
         ZStack {
-            // Sticker White Border with Drop Shadow
-            Circle()
-                .fill(Color.white)
-                .frame(width: size, height: size)
-                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
-            
-            // Gray Colored Circle
+            // Gray Colored Circle with Drop Shadow
             Circle()
                 .fill(Color.gray)
-                .frame(width: size * 0.82, height: size * 0.82)
-            
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+
             Text("½")
                 .font(.system(size: size * 0.46, weight: .black, design: .rounded))
                 .foregroundColor(.white)
@@ -163,17 +148,12 @@ struct TimeUpBadge: View {
     
     var body: some View {
         ZStack {
-            // Sticker White Border with Drop Shadow
-            Circle()
-                .fill(Color.white)
-                .frame(width: size, height: size)
-                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
-            
-            // Red Colored Circle (blunder color)
+            // Red Colored Circle (blunder color) with Drop Shadow
             Circle()
                 .fill(ClassificationColor.blunder)
-                .frame(width: size * 0.82, height: size * 0.82)
-            
+                .frame(width: size, height: size)
+                .shadow(color: .black.opacity(0.22), radius: size * 0.08, x: 0, y: size * 0.04)
+
             Image(systemName: "clock.fill")
                 .font(.system(size: size * 0.44, weight: .bold))
                 .foregroundColor(.white)

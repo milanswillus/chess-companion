@@ -12,13 +12,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		2313E9CD2FB3B4DF00B51DF1 /* ChessAnalyzer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChessAnalyzer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2313E9CD2FB3B4DF00B51DF1 /* ChessCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChessCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		2313E9CF2FB3B4DF00B51DF1 /* ChessAnalyzer */ = {
+		2313E9CF2FB3B4DF00B51DF1 /* ChessCompanion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ChessAnalyzer;
+			path = ChessCompanion;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,7 +39,7 @@
 		2313E9C42FB3B4DF00B51DF1 = {
 			isa = PBXGroup;
 			children = (
-				2313E9CF2FB3B4DF00B51DF1 /* ChessAnalyzer */,
+				2313E9CF2FB3B4DF00B51DF1 /* ChessCompanion */,
 				2313E9CE2FB3B4DF00B51DF1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -47,7 +47,7 @@
 		2313E9CE2FB3B4DF00B51DF1 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				2313E9CD2FB3B4DF00B51DF1 /* ChessAnalyzer.app */,
+				2313E9CD2FB3B4DF00B51DF1 /* ChessCompanion.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,9 +55,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		2313E9CC2FB3B4DF00B51DF1 /* ChessAnalyzer */ = {
+		2313E9CC2FB3B4DF00B51DF1 /* ChessCompanion */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 2313E9D82FB3B4E000B51DF1 /* Build configuration list for PBXNativeTarget "ChessAnalyzer" */;
+			buildConfigurationList = 2313E9D82FB3B4E000B51DF1 /* Build configuration list for PBXNativeTarget "ChessCompanion" */;
 			buildPhases = (
 				2313E9C92FB3B4DF00B51DF1 /* Sources */,
 				2313E9CA2FB3B4DF00B51DF1 /* Frameworks */,
@@ -68,15 +68,15 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				2313E9CF2FB3B4DF00B51DF1 /* ChessAnalyzer */,
+				2313E9CF2FB3B4DF00B51DF1 /* ChessCompanion */,
 			);
-			name = ChessAnalyzer;
+			name = ChessCompanion;
 			packageProductDependencies = (
 				E35558E8C74659FB7D1F755C /* ChessKit */,
 				195586294A8A3789E35B952D /* ChessKitEngine */,
 			);
-			productName = ChessAnalyzer;
-			productReference = 2313E9CD2FB3B4DF00B51DF1 /* ChessAnalyzer.app */;
+			productName = ChessCompanion;
+			productReference = 2313E9CD2FB3B4DF00B51DF1 /* ChessCompanion.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -94,7 +94,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 2313E9C82FB3B4DF00B51DF1 /* Build configuration list for PBXProject "ChessAnalyzer" */;
+			buildConfigurationList = 2313E9C82FB3B4DF00B51DF1 /* Build configuration list for PBXProject "ChessCompanion" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -112,7 +112,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				2313E9CC2FB3B4DF00B51DF1 /* ChessAnalyzer */,
+				2313E9CC2FB3B4DF00B51DF1 /* ChessCompanion */,
 			);
 		};
 /* End PBXProject section */
@@ -271,17 +271,19 @@
 				DEVELOPMENT_TEAM = 8JQYJF5Y8L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Chess Companion";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ChessAnalyzer;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChessCompanion;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -305,17 +307,19 @@
 				DEVELOPMENT_TEAM = 8JQYJF5Y8L;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Chess Companion";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ChessAnalyzer;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ChessCompanion;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -330,7 +334,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		2313E9C82FB3B4DF00B51DF1 /* Build configuration list for PBXProject "ChessAnalyzer" */ = {
+		2313E9C82FB3B4DF00B51DF1 /* Build configuration list for PBXProject "ChessCompanion" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2313E9D62FB3B4E000B51DF1 /* Debug */,
@@ -339,7 +343,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		2313E9D82FB3B4E000B51DF1 /* Build configuration list for PBXNativeTarget "ChessAnalyzer" */ = {
+		2313E9D82FB3B4E000B51DF1 /* Build configuration list for PBXNativeTarget "ChessCompanion" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				2313E9D92FB3B4E000B51DF1 /* Debug */,
