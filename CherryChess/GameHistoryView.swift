@@ -74,7 +74,7 @@ struct GameHistoryView: View {
                                     .cornerRadius(16)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16)
-                                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                            .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                                     )
                             }
                         }
@@ -123,7 +123,7 @@ struct GameRowView: View {
             .frame(width: 20, height: 20)
             .overlay(
                 Circle()
-                    .stroke(Color.white.opacity(0.4), lineWidth: game.playerColor == "black" ? 1 : 0)
+                    .stroke(Theme.line.opacity(0.4), lineWidth: game.playerColor == "black" ? 1 : 0)
             )
     }
     
@@ -216,11 +216,11 @@ struct GameRowView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.07))
+                            .background(Theme.line.opacity(0.07))
                             .cornerRadius(10)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                     }

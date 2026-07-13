@@ -44,7 +44,7 @@ struct CoordinateLearningView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(L10n.tr("select_mode"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .padding(.horizontal)
                         
                         VStack(spacing: 14) {
@@ -54,7 +54,7 @@ struct CoordinateLearningView: View {
                                     HStack {
                                         Text(L10n.tr("start_rated"))
                                             .font(.roundedSystem(.headline, weight: .bold))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(Theme.textMain)
                                         Spacer()
                                         Image(systemName: "play.fill")
                                             .foregroundColor(Theme.accentColor)
@@ -71,7 +71,7 @@ struct CoordinateLearningView: View {
                                 .cornerRadius(16)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                                 )
                             }
                             .buttonStyle(ScaleButtonStyle())
@@ -82,7 +82,7 @@ struct CoordinateLearningView: View {
                                     HStack {
                                         Text(L10n.tr("start_endless"))
                                             .font(.roundedSystem(.headline, weight: .bold))
-                                            .foregroundColor(.white)
+                                            .foregroundColor(Theme.textMain)
                                         Spacer()
                                         Image(systemName: "play.fill")
                                             .foregroundColor(Theme.accentColor)
@@ -99,7 +99,7 @@ struct CoordinateLearningView: View {
                                 .cornerRadius(16)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                                 )
                             }
                             .buttonStyle(ScaleButtonStyle())
@@ -111,7 +111,7 @@ struct CoordinateLearningView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(L10n.tr("settings"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .padding(.horizontal)
                         
                         Toggle(L10n.tr("board_coordinates"), isOn: $viewModel.showLabels)
@@ -123,7 +123,7 @@ struct CoordinateLearningView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(L10n.tr("high_scores"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .padding(.horizontal)
                         
                         VStack(spacing: 12) {
@@ -134,7 +134,7 @@ struct CoordinateLearningView: View {
                                         .foregroundColor(Theme.accentColor)
                                     Text(appLanguage == "de" ? "Rated (1 Minute)" : "Rated (1 Minute)")
                                         .font(.roundedSystem(.subheadline, weight: .bold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Theme.textMain)
                                     Spacer()
                                 }
                                 
@@ -149,7 +149,7 @@ struct CoordinateLearningView: View {
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                             
                             // Endless card
@@ -159,7 +159,7 @@ struct CoordinateLearningView: View {
                                         .foregroundColor(Theme.accentColor)
                                     Text(appLanguage == "de" ? "Endless (Fehlerfrei)" : "Endless (Flawless)")
                                         .font(.roundedSystem(.subheadline, weight: .bold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Theme.textMain)
                                     Spacer()
                                 }
                                 
@@ -182,7 +182,7 @@ struct CoordinateLearningView: View {
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                         .padding(.horizontal)
@@ -224,7 +224,7 @@ struct CoordinateLearningView: View {
                 .foregroundColor(Theme.textSecondary)
             Text(value)
                 .font(.roundedSystem(.subheadline, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(Theme.textMain)
         }
     }
     
@@ -235,7 +235,7 @@ struct CoordinateLearningView: View {
                 .foregroundColor(Theme.textSecondary)
             Text("\(score) \(L10n.tr("pts"))")
                 .font(.roundedSystem(.subheadline, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(Theme.textMain)
             if score > 0 {
                 Text(L10n.tr("average") + String(format: ": %.2fs", time))
                     .font(.roundedSystem(size: 10))
@@ -274,11 +274,11 @@ struct CoordinateLearningView: View {
                             .foregroundColor(viewModel.timeLeft < 10 ? Theme.lossColor : .white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.1))
+                            .background(Theme.line.opacity(0.1))
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                     }
                 } else {
@@ -307,7 +307,7 @@ struct CoordinateLearningView: View {
                 
                 Text(viewModel.targetSquare?.coordinateString.uppercased() ?? "")
                     .font(.system(size: 64, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
+                    .foregroundColor(Theme.textMain)
                     .scaleEffect(viewModel.showGreenFlash ? 1.15 : (viewModel.showRedFlash ? 0.9 : 1.0))
                     .animation(.spring(response: 0.15, dampingFraction: 0.5), value: viewModel.targetSquare)
                     .padding(.horizontal, 24)
@@ -316,11 +316,11 @@ struct CoordinateLearningView: View {
                         RoundedRectangle(cornerRadius: 16)
                             .fill(
                                 viewModel.showGreenFlash ? Color.green.opacity(0.2) :
-                                (viewModel.showRedFlash ? Color.red.opacity(0.2) : Color.white.opacity(0.05))
+                                (viewModel.showRedFlash ? Color.red.opacity(0.2) : Theme.line.opacity(0.05))
                             )
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                     )
             }
@@ -350,7 +350,7 @@ struct CoordinateLearningView: View {
             
             Text(L10n.tr("game_finished"))
                 .font(.roundedSystem(.largeTitle, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(Theme.textMain)
             
             if viewModel.isNewHighScore {
                 Text(L10n.tr("new_high_score"))
@@ -380,7 +380,7 @@ struct CoordinateLearningView: View {
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
             )
             .padding(.horizontal, 32)
             
@@ -405,14 +405,14 @@ struct CoordinateLearningView: View {
                 Button(action: { viewModel.reset() }) {
                     Text(L10n.tr("main_menu"))
                         .font(.roundedSystem(.headline, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(Theme.textMain)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Theme.panelBackground)
                         .cornerRadius(16)
                         .overlay(
                             RoundedRectangle(cornerRadius: 16)
-                                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                         )
                 }
                 .buttonStyle(ScaleButtonStyle())
@@ -430,7 +430,7 @@ struct CoordinateLearningView: View {
             Spacer()
             Text(value)
                 .font(.roundedSystem(.headline, weight: .bold))
-                .foregroundColor(.white)
+                .foregroundColor(Theme.textMain)
         }
     }
 }

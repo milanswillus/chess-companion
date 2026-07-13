@@ -54,7 +54,7 @@ struct ProfileView: View {
                             title: L10n.tr("profile_accuracy_trend"),
                             icon: "target",
                             values: challengeGames.map { $0.accuracy },
-                            color: Theme.winColor,
+                            color: Theme.accentColor,
                             fixedRange: 0...100,
                             format: { String(format: "%.0f%%", $0) }
                         )
@@ -91,7 +91,7 @@ struct ProfileView: View {
                         .frame(width: isIPad ? 48 : 42, height: isIPad ? 48 : 42)
                         .background(Theme.panelBackground)
                         .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.white.opacity(0.08), lineWidth: 1))
+                        .overlay(Circle().stroke(Theme.line.opacity(0.08), lineWidth: 1))
                         .shadow(color: Color.black.opacity(0.3), radius: 6, x: 0, y: 2)
                 }
                 .buttonStyle(ScaleButtonStyle())
@@ -151,7 +151,7 @@ struct ProfileView: View {
         .cornerRadius(18)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
         )
     }
 
@@ -169,13 +169,13 @@ struct ProfileView: View {
                 label: L10n.tr("profile_avg_accuracy"),
                 value: store.averageChallengeAccuracy.map { String(format: "%.0f%%", $0) } ?? "—",
                 icon: "target",
-                color: Theme.winColor
+                color: Theme.accentColor
             )
             statTile(
                 label: L10n.tr("profile_games_played"),
                 value: "\(challengeGames.count)",
                 icon: "flag.checkered",
-                color: Theme.textMain
+                color: Theme.accentColor
             )
         }
     }
@@ -204,7 +204,7 @@ struct ProfileView: View {
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
         )
     }
 
@@ -233,7 +233,7 @@ struct ProfileView: View {
         .cornerRadius(18)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                .stroke(Theme.line.opacity(0.06), lineWidth: 1)
         )
     }
 
@@ -304,7 +304,7 @@ struct LineTrendChart: View {
                         p.move(to: CGPoint(x: labelWidth, y: y))
                         p.addLine(to: CGPoint(x: w, y: y))
                     }
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
 
                     Text(format(val))
                         .font(.system(size: 9, weight: .bold, design: .rounded))

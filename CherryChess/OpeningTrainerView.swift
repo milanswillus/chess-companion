@@ -178,7 +178,7 @@ struct OpeningTrainerView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(L10n.tr("openings_training"))
                                         .font(.roundedSystem(.title3, weight: .bold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Theme.textMain)
                                     
                                     Text(L10n.tr("openings_training_desc"))
                                         .font(.roundedSystem(.caption))
@@ -194,7 +194,7 @@ struct OpeningTrainerView: View {
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -215,7 +215,7 @@ struct OpeningTrainerView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(L10n.tr("mate_scenarios"))
                                         .font(.roundedSystem(.title3, weight: .bold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Theme.textMain)
                                     
                                     Text(L10n.tr("mate_training_desc"))
                                         .font(.roundedSystem(.caption))
@@ -231,7 +231,7 @@ struct OpeningTrainerView: View {
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -252,7 +252,7 @@ struct OpeningTrainerView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(L10n.tr("learn_coordinates"))
                                         .font(.roundedSystem(.title3, weight: .bold))
-                                        .foregroundColor(.white)
+                                        .foregroundColor(Theme.textMain)
                                     
                                     Text(L10n.tr("coord_desc"))
                                         .font(.roundedSystem(.caption))
@@ -268,7 +268,7 @@ struct OpeningTrainerView: View {
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -383,7 +383,7 @@ struct OpeningTrainerView: View {
                                 .cornerRadius(16)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                        .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                                 )
                             }
                             .buttonStyle(ScaleButtonStyle())
@@ -428,7 +428,26 @@ struct OpeningCardView: View {
     @AppStorage("appTheme") private var appTheme = "cherry"
     let opening: Opening
     let action: () -> Void
-    
+    // Position after the first plies, computed once when the card is created
+    // rather than replayed on every body pass.
+    private let previewBoard: Board
+
+    init(opening: Opening, action: @escaping () -> Void) {
+        self.opening = opening
+        self.action = action
+        self.previewBoard = Self.makePreviewBoard(for: opening)
+    }
+
+    private static func makePreviewBoard(for opening: Opening) -> Board {
+        var board = Board()
+        let count = min(8, opening.moves.count)
+        for i in 0..<count {
+            let move = opening.moves[i]
+            _ = board.move(pieceAt: Square(move.start), to: Square(move.end))
+        }
+        return board
+    }
+
     var body: some View {
         let _ = appLanguage
         let _ = appTheme
@@ -450,7 +469,7 @@ struct OpeningCardView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(appLanguage == "de" ? opening.nameGerman : opening.name)
                             .font(.roundedSystem(size: cardSize * 0.08, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                         
@@ -486,50 +505,46 @@ struct OpeningCardView: View {
             .cornerRadius(16)
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.2), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(ScaleButtonStyle())
     }
-    
-    private var previewBoard: Board {
-        var board = Board()
-        let count = min(8, opening.moves.count)
-        for i in 0..<count {
-            let move = opening.moves[i]
-            _ = board.move(pieceAt: Square(move.start), to: Square(move.end))
-        }
-        return board
-    }
 }
 
 // MARK: - Mini Chess Board View for Opening Card Preview
+// Drawn in a single Canvas pass (checkerboard + pieces) instead of ~96 nested
+// SwiftUI subviews per card, which kept the openings grid smooth while scrolling.
 struct MiniChessBoardView: View {
     let board: Board
-    
+
     var body: some View {
-        VStack(spacing: 0) {
-            ForEach(0..<8, id: \.self) { rankIndex in
-                HStack(spacing: 0) {
-                    ForEach(0..<8, id: \.self) { fileIndex in
-                        let rank = 7 - rankIndex
-                        let file = fileIndex
-                        let square = Square("\(Square.File(file + 1).rawValue)\(rank + 1)")
-                        let isLight = (file + rank) % 2 != 0
-                        let piece = board.position.piece(at: square)
-                        
-                        ZStack {
-                            Rectangle()
-                                .fill(isLight ? Theme.lightSquare : Theme.darkSquare)
-                            
-                            if let piece = piece {
-                                Image(piece.imageName)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .padding(0.8)
-                            }
-                        }
+        Canvas { context, size in
+            let cell = size.width / 8
+            for rankIndex in 0..<8 {
+                for fileIndex in 0..<8 {
+                    let rank = 7 - rankIndex
+                    let file = fileIndex
+                    let rect = CGRect(
+                        x: CGFloat(fileIndex) * cell,
+                        y: CGFloat(rankIndex) * cell,
+                        width: cell,
+                        height: cell
+                    )
+                    let isLight = (file + rank) % 2 != 0
+                    context.fill(
+                        Path(rect),
+                        with: .color(isLight ? Theme.lightSquare : Theme.darkSquare)
+                    )
+
+                    let square = Square("\(Square.File(file + 1).rawValue)\(rank + 1)")
+                    if let piece = board.position.piece(at: square) {
+                        let inset = cell * 0.06
+                        context.draw(
+                            context.resolve(Image(piece.imageName)),
+                            in: rect.insetBy(dx: inset, dy: inset)
+                        )
                     }
                 }
             }
@@ -555,14 +570,14 @@ struct ColorSelectionSheet: View {
             VStack(spacing: 24) {
                 // Header indicator
                 Capsule()
-                    .fill(Color.white.opacity(0.15))
+                    .fill(Theme.line.opacity(0.15))
                     .frame(width: 40, height: 5)
                     .padding(.top, 12)
                 
                 VStack(spacing: 6) {
                     Text(L10n.tr("choose_color"))
                         .font(.title3.bold())
-                        .foregroundColor(.white)
+                        .foregroundColor(Theme.textMain)
                     
                     Text(appLanguage == "de" ? "Wähle deine Seite für das Training der Eröffnung:" : "Choose your side for training this opening:")
                         .font(.caption)
@@ -593,7 +608,7 @@ struct ColorSelectionSheet: View {
                             
                             Text(appLanguage == "de" ? "Weiß spielen" : "Play as White")
                                 .font(.subheadline.bold())
-                                .foregroundColor(.white)
+                                .foregroundColor(Theme.textMain)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -607,18 +622,18 @@ struct ColorSelectionSheet: View {
                                     .frame(width: 70, height: 70)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                                            .stroke(Theme.line.opacity(0.3), lineWidth: 1.5)
                                     )
                                     .shadow(radius: 3)
                                 
                                 Image(systemName: "crown.fill")
                                     .font(.title)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                             }
                             
                             Text(appLanguage == "de" ? "Schwarz spielen" : "Play as Black")
                                 .font(.subheadline.bold())
-                                .foregroundColor(.white)
+                                .foregroundColor(Theme.textMain)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -690,7 +705,7 @@ struct OpeningTrainingDetailView: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(appLanguage == "de" ? session.opening.nameGerman : session.opening.name)
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                         Text(appLanguage == "de" ? "Training" : "Training")
                             .font(.roundedSystem(.caption))
                             .foregroundColor(Theme.textSecondary)
@@ -706,7 +721,7 @@ struct OpeningTrainingDetailView: View {
                             if let error = viewModel.errorMessage {
                                 Text(error)
                                     .font(.subheadline.bold())
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                                     .padding(.vertical, 8)
                                     .padding(.horizontal, 16)
                                     .background(Color.red.opacity(0.85))
@@ -768,7 +783,7 @@ struct OpeningTrainingDetailView: View {
                                             .padding(.vertical, 6)
                                             .background(
                                                 isCurrent ? Theme.highlightSquare :
-                                                (isPlayed ? Color.green.opacity(0.25) : Color.white.opacity(0.08))
+                                                (isPlayed ? Color.green.opacity(0.25) : Theme.line.opacity(0.08))
                                             )
                                             .foregroundColor(
                                                 isCurrent ? .black :
@@ -834,13 +849,13 @@ struct OpeningTrainingDetailView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .font(.roundedSystem(.subheadline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .padding(.vertical, 12)
                             .background(Theme.panelBackground)
                             .cornerRadius(16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                                    .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                             )
                         }
                     }
@@ -852,7 +867,7 @@ struct OpeningTrainingDetailView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(appLanguage == "de" ? "Info zur Eröffnung" : "About the Opening")
                             .font(.roundedSystem(.subheadline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                         
                         Text(session.opening.description)
                             .font(.roundedSystem(.caption))
@@ -866,7 +881,7 @@ struct OpeningTrainingDetailView: View {
                     .cornerRadius(16)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                     )
                     .padding(.horizontal)
                 }
@@ -895,7 +910,7 @@ struct OpeningTrainingDetailView: View {
                             HStack(spacing: 8) {
                                 Text(appLanguage == "de" ? "Eröffnung gelernt!" : "Opening learned!")
                                     .font(.title.bold())
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Theme.textMain)
                                 Image(systemName: "trophy.fill")
                                     .font(.title)
                                     .foregroundColor(Theme.accentColor)
@@ -926,11 +941,11 @@ struct OpeningTrainingDetailView: View {
                                 onBack()
                             }
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .padding(.vertical, 14)
                             .padding(.horizontal, 32)
                             .frame(maxWidth: .infinity)
-                            .background(Color.white.opacity(0.12))
+                            .background(Theme.line.opacity(0.12))
                             .cornerRadius(10)
                         }
                         .padding(.horizontal, 40)
@@ -940,7 +955,7 @@ struct OpeningTrainingDetailView: View {
                     .cornerRadius(20)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            .stroke(Theme.line.opacity(0.15), lineWidth: 1)
                     )
                     .padding(24)
                 }
@@ -1105,7 +1120,7 @@ struct MateScenarioBoardRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                .stroke(Theme.line.opacity(0.15), lineWidth: 1)
         )
     }
 

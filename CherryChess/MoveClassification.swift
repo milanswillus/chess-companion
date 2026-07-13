@@ -113,7 +113,7 @@ struct MoveClassificationBadge: View {
                             .font(.system(size: size * 0.44, weight: .black, design: .rounded))
                     }
                 }
-                .foregroundColor(.white)
+                .foregroundColor(.white) // Always white: the badge circle is a saturated color in every theme
                 .shadow(color: Color.black.opacity(0.3), radius: size * 0.02, x: 0, y: size * 0.03)
             }
         }

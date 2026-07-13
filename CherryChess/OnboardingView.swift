@@ -55,7 +55,7 @@ struct OnboardingView: View {
 
                         TextField(L10n.tr("onboarding_name_placeholder"), text: $name)
                             .font(.roundedSystem(.body, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .focused($nameFocused)
                             .submitLabel(.done)
                             .padding(.vertical, 12)
@@ -64,7 +64,7 @@ struct OnboardingView: View {
                             .cornerRadius(10)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(nameFocused ? Theme.accentColor : Color.white.opacity(0.12), lineWidth: 1.5)
+                                    .stroke(nameFocused ? Theme.accentColor : Theme.line.opacity(0.12), lineWidth: 1.5)
                             )
                     }
                     .padding(16)
@@ -72,7 +72,7 @@ struct OnboardingView: View {
                     .cornerRadius(16)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                     )
 
                     // Elo card
@@ -116,7 +116,7 @@ struct OnboardingView: View {
                             .cornerRadius(10)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 10)
-                                    .stroke(eloKnown ? Color.white.opacity(0.08) : Theme.accentColor, lineWidth: 1)
+                                    .stroke(eloKnown ? Theme.line.opacity(0.08) : Theme.accentColor, lineWidth: 1)
                             )
                         }
                         .buttonStyle(ScaleButtonStyle())
@@ -126,14 +126,14 @@ struct OnboardingView: View {
                     .cornerRadius(16)
                     .overlay(
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                            .stroke(Theme.line.opacity(0.06), lineWidth: 1)
                     )
 
                     // Continue button
                     Button(action: complete) {
                         Text(L10n.tr("onboarding_continue"))
                             .font(.roundedSystem(.headline, weight: .bold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Theme.textMain)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(canContinue ? AnyShapeStyle(Theme.primaryGradient) : AnyShapeStyle(Color.gray.opacity(0.3)))
