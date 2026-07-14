@@ -332,7 +332,7 @@ struct ContentView: View {
             let activePromoVM = (selectedTab == 3) ? analysisViewModel : viewModel
             if activePromoVM.showPromotionPicker || activePromoVM.showPremovePromotionPicker {
                 PromotionPickerView(
-                    promotingColor: activePromoVM.showPremovePromotionPicker ? activePromoVM.playerColor : activePromoVM.board.position.sideToMove,
+                    promotingColor: activePromoVM.showPremovePromotionPicker ? activePromoVM.playerColor : (activePromoVM.pendingPromotionMove?.piece.color ?? activePromoVM.board.position.sideToMove.opposite),
                     onSelect: { kind in
                         if activePromoVM.showPremovePromotionPicker {
                             activePromoVM.completePremovePromotion(to: kind)

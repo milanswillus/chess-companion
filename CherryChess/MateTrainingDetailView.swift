@@ -180,7 +180,7 @@ struct MateTrainingDetailView: View {
             
             // Promotion Picker Overlay (Clean, premium custom modal)
             if viewModel.showPromotionPicker {
-                PromotionPickerView(promotingColor: viewModel.playerColor) { kind in
+                PromotionPickerView(promotingColor: viewModel.pendingPromotionMove?.piece.color ?? viewModel.playerColor) { kind in
                     viewModel.completePromotion(to: kind)
                 }
                 .zIndex(200)
